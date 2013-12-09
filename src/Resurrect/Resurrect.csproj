@@ -90,6 +90,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\icon.pdn" />
+    <None Include="feed.sample.atom">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
@@ -111,6 +114,7 @@
     <Content Include="Resources\Images.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Resources\screenshot.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Package.ico">
