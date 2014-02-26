@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using EnvDTE80;
+using EnvDTE90;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -57,9 +58,9 @@ namespace Resurrect
                 var dte = GetService(typeof (SDTE)) as DTE2;
                 if (dte != null)
                 {
-                    var dteDebugger = dte.Debugger as Debugger2;
+                    var dteDebugger = dte.Debugger as Debugger3;
                     if (dteDebugger != null)
-                    {                        
+                    {
                         HistoricStorage.Instantiate(UserRegistryRoot);
                         AttachCenter.Instantiate(this, dteDebugger);                        
                         var guard = new DebugEventsHunter(debugger);

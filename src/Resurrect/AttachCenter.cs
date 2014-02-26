@@ -3,7 +3,7 @@ using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using EnvDTE80;
+using EnvDTE90;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -14,21 +14,21 @@ namespace Resurrect
     public class AttachCenter
     {        
         private readonly IServiceProvider _provider;
-        private readonly Debugger2 _dteDebugger;
+        private readonly Debugger3 _dteDebugger;
         private bool _freezed;
         private OleMenuCommand _command;
 
         private static AttachCenter _instance;
         private static readonly object _locker = new object();
 
-        private AttachCenter(IServiceProvider provider, Debugger2 dteDebugger)
+        private AttachCenter(IServiceProvider provider, Debugger3 dteDebugger)
         {
             _provider = provider;
             _dteDebugger = dteDebugger;
             _freezed = false;
         }
 
-        public static void Instantiate(IServiceProvider provider, Debugger2 dteDebugger)
+        public static void Instantiate(IServiceProvider provider, Debugger3 dteDebugger)
         {
             lock (_locker)
             {
@@ -84,18 +84,11 @@ namespace Resurrect
             const int delay = 500;
             while (true)    // Patrol for safety reasons and in case of multiple VS instances running, which can change debug history.
             {
-                if (_freezed)
-                {
-                    _command.Enabled = false;
-                }
-                else
-                {
-                    _command.Enabled = HistoricStorage.Instance.IsAnyStored();
-                    _command.Text = string.Format("Resurrect {0}",
+                _command.Enabled = !_freezed && HistoricStorage.Instance.IsAnyStored();
+                _command.Text = string.Format("Resurrect {0}",
                                                   string.Join(", ",
                                                               HistoricStorage.Instance.GetProcesses()
                                                                              .Select(Path.GetFileName)));
-                }
                 Thread.Sleep(delay);
             }
         }
@@ -111,21 +104,22 @@ namespace Resurrect
             {
                 var stored = HistoricStorage.Instance.GetProcesses();
                 var processes =
-                    _dteDebugger.LocalProcesses.Cast<Process2>()
+                    _dteDebugger.LocalProcesses.Cast<Process3>()
                                 .Where(
                                     process =>
                                     stored.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
                                 .ToList();
+
                 if (processes.Count > 0)
                 {
                     var unavailable =
-                        stored.Except(processes.Select(x => x.Name), StringComparer.CurrentCultureIgnoreCase).ToList();
+                        stored.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
                     if (unavailable.Any())
                     {
                         if (DialogResult.OK !=
                             AskQuestion(
                                 string.Format(
-                                    "Some of historic processes not running: {0}. Continue to resurrect rest of them ?",
+                                    "Some of historic processes not running: {0}. Continue to resurrect rest of them?",
                                     string.Join(",", unavailable.Select(Path.GetFileName)))))
                         {
                             return;
@@ -136,12 +130,12 @@ namespace Resurrect
                     var engines = new[] { transport.Engines.Item("managed/native") };
                     foreach (var process in processes)
                     {
-                        process.Attach2(engines);
+                        process.Attach2(engines);                        
                     }
                 }
                 else
                 {
-                    ShowMessage("No historic processes found running. Sorry, too dead to resurrect anything.");
+                    ShowMessage("No historic processes found running. Sorry, everything too dead to resurrect.");
                 }
             }
         }

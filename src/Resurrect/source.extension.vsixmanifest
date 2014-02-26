@@ -5,9 +5,10 @@
     <DisplayName>Resurrect</DisplayName>
     <Description xml:space="preserve">Attach debugger to previously debugged processes.</Description>
     <Icon>Resources\icon.png</Icon>
+    <PreviewImage>Resources\screenshot.png</PreviewImage>
   </Metadata>
   <Installation InstalledByMsi="false">
-    <InstallationTarget Version="[11.0,12.0)" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="[11.0,12.0]" Id="Microsoft.VisualStudio.Pro" />
   </Installation>
   <Dependencies>
     <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.5" />
