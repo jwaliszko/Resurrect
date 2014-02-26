@@ -130,7 +130,7 @@ namespace Resurrect
                     var engines = new[] { transport.Engines.Item("managed/native") };
                     foreach (var process in processes)
                     {
-                        process.Attach2(engines);                        
+                        process.Attach2(engines);
                     }
                 }
                 else

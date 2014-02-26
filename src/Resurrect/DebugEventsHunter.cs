@@ -29,13 +29,12 @@ namespace Resurrect
                 string name;
                 process.GetName((uint) enum_GETNAME_TYPE.GN_FILENAME, out name);
 
-                if (debugEvent is IDebugProcessCreateEvent2)
+                if (!name.EndsWith("vshost.exe"))
                 {
-                    AttachCenter.Instance.Freeze();                 
-                }
-                if (debugEvent is IDebugProcessDestroyEvent2)
-                {
-                    HistoricStorage.Instance.Subscribe(name);
+                    if (debugEvent is IDebugProcessCreateEvent2)
+                        AttachCenter.Instance.Freeze();
+                    if (debugEvent is IDebugProcessDestroyEvent2)
+                        HistoricStorage.Instance.Subscribe(name);
                 }
 
             }
