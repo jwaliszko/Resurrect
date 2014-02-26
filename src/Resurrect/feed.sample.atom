@@ -20,7 +20,7 @@
     <content type="application/octet-stream" src="Resurrect.vsix" />
     <Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/developer/vsx-syndication-schema/2010">
       <Id>ae98c9e5-8e14-4c92-b45a-c4fd24a498ef</Id>
-      <Version>1.0</Version>
+      <Version>1.1</Version>
       <References />
       <Rating xsi:nil="true" />
       <RatingCount xsi:nil="true" />
