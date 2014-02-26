@@ -57,11 +57,11 @@ namespace Resurrect
             {
                 var dte = GetService(typeof (SDTE)) as DTE2;
                 if (dte != null)
-                {
+                {                    
                     var dteDebugger = dte.Debugger as Debugger3;
                     if (dteDebugger != null)
                     {
-                        HistoricStorage.Instantiate(UserRegistryRoot);
+                        HistoricStorage.Instantiate(UserRegistryRoot, dte);
                         AttachCenter.Instantiate(this, dteDebugger);                        
                         var guard = new DebugEventsHunter(debugger);
                         guard.Listen();

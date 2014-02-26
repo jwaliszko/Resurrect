@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using EnvDTE80;
 using Microsoft.Win32;
 
 namespace Resurrect
@@ -8,10 +10,15 @@ namespace Resurrect
     public class HistoricStorage
     {
         private const string KeyName = "Resurrect";
-        private const string KeyValue = "Processes";
+
+        private string KeyValue
+        {
+            get { return Path.GetFileName(_application.Solution.FullName); }
+        }
 
         private IList<string> _processes = new List<string>();
         private readonly RegistryKey _storeTarget;
+        private static DTE2 _application;
         private static HistoricStorage _instance;
         private static readonly object _locker = new object();
 
@@ -20,13 +27,14 @@ namespace Resurrect
             _storeTarget = storeTarget;
         }
 
-        public static void Instantiate(RegistryKey storeTarget)
+        public static void Instantiate(RegistryKey storeTarget, DTE2 application)
         {
             lock (_locker)
             {
                 if (_instance != null)
                     throw new ArgumentException("HistoricStorage of Resurrect is already instantiated.");
                 _instance = new HistoricStorage(storeTarget);
+                _application = application;
             }
         }
 
@@ -96,6 +104,7 @@ namespace Resurrect
                 {
                     if (key == null)
                         throw new Exception("Resurrect could not store processes for further usage: registry problem.");
+
                     key.SetValue(KeyValue, string.Join(",", _processes));
                     _processes.Clear();
                 }
