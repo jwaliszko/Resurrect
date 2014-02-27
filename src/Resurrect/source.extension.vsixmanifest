@@ -1,9 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="ae98c9e5-8e14-4c92-b45a-c4fd24a498ef" Version="1.0" Language="en-US" Publisher="Jaroslaw Waliszko" />
+    <Identity Id="ae98c9e5-8e14-4c92-b45a-c4fd24a498ef" Version="1.1" Language="en-US" Publisher="Jaroslaw Waliszko" />
     <DisplayName>Resurrect</DisplayName>
     <Description xml:space="preserve">Attach debugger to previously debugged processes.</Description>
+    <MoreInfo>https://github.com/JaroslawWaliszko/Resurrect</MoreInfo>
+    <License>LICENSE.txt</License>
     <Icon>Resources\icon.png</Icon>
     <PreviewImage>Resources\screenshot.png</PreviewImage>
   </Metadata>

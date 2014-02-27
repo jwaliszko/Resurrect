@@ -35,7 +35,7 @@ namespace Resurrect
                 if (_instance != null)
                     throw new ArgumentException("AttachCenter of Resurrect is already instantiated.");
                 _instance = new AttachCenter(provider, dteDebugger);
-                _instance.BindCommand();
+                _instance.BindCommand(enabled: false);
                 _instance.SendPatrol();
             }
         }
@@ -60,7 +60,7 @@ namespace Resurrect
             _command.Enabled = true;
         }
 
-        private void BindCommand()
+        private void BindCommand(bool enabled)
         {
             // Add our command handlers for menu (commands must exist in the .vsct file)
             var mcs = _provider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
@@ -68,7 +68,7 @@ namespace Resurrect
             {
                 // Create the command for the menu item.
                 var commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidResurrect);
-                _command = new OleMenuCommand(AttachToProcesses, commandId);
+                _command = new OleMenuCommand(AttachToProcesses, commandId) {Enabled = enabled};
                 mcs.AddCommand(_command);
             }            
         }
