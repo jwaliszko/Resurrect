@@ -12,7 +12,7 @@ namespace Resurrect
 
         public DebugEventsHunter(IVsDebugger debugger)
         {
-            _debugger = debugger;            
+            _debugger = debugger;
         }
 
         public void Listen()
@@ -21,33 +21,45 @@ namespace Resurrect
             _debugger.AdviseDebugEventCallback(this);
         }
 
+        public int OnModeChange(DBGMODE mode)
+        {
+            if (mode == DBGMODE.DBGMODE_Design)
+            {
+                HistoricStorage.Instance.Persist();
+                AttachCenter.Instance.Unfreeze();
+            }
+            return VSConstants.S_OK;
+        }
+
         public int Event(IDebugEngine2 engine, IDebugProcess2 process, IDebugProgram2 program,
                          IDebugThread2 thread, IDebugEvent2 debugEvent, ref Guid riidEvent, uint attributes)
         {
             if (process != null)
             {
-                string name;
-                process.GetName((uint) enum_GETNAME_TYPE.GN_FILENAME, out name);
+                string processName;
+                process.GetName((uint) enum_GETNAME_TYPE.GN_FILENAME, out processName);
 
-                if (!name.EndsWith("vshost.exe"))
+                if (!processName.EndsWith("vshost.exe"))
                 {
                     if (debugEvent is IDebugProcessCreateEvent2)
                         AttachCenter.Instance.Freeze();
                     if (debugEvent is IDebugProcessDestroyEvent2)
-                        HistoricStorage.Instance.Subscribe(name);
+                        HistoricStorage.Instance.SubscribeProcess(processName);
                 }
 
             }
-            return VSConstants.S_OK;
-        }
 
-        public int OnModeChange(DBGMODE mode)
-        {
-            if (mode == DBGMODE.DBGMODE_Design)
-            {                
-                HistoricStorage.Instance.Persist();
-                AttachCenter.Instance.Unfreeze();
+            if (debugEvent is IDebugLoadCompleteEvent2)
+            {
+                if (program != null)
+                {
+                    string engineName;
+                    Guid engineId;
+                    program.GetEngineInfo(out engineName, out engineId);
+                    HistoricStorage.Instance.SubscribeEngine(engineId);
+                }
             }
+
             return VSConstants.S_OK;
         }
     }

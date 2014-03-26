@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using EnvDTE80;
 using EnvDTE90;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
@@ -86,9 +88,7 @@ namespace Resurrect
             {
                 _command.Enabled = !_freezed && HistoricStorage.Instance.IsAnyStored();
                 _command.Text = string.Format("Resurrect {0}",
-                                                  string.Join(", ",
-                                                              HistoricStorage.Instance.GetProcesses()
-                                                                             .Select(Path.GetFileName)));
+                    string.Join(", ", HistoricStorage.Instance.GetProcesses().Select(Path.GetFileName)));
                 Thread.Sleep(delay);
             }
         }
@@ -102,40 +102,48 @@ namespace Resurrect
         {
             if (!_freezed && HistoricStorage.Instance.IsAnyStored())
             {
-                var stored = HistoricStorage.Instance.GetProcesses();
+                var storedProcesses = HistoricStorage.Instance.GetProcesses();
                 var processes =
                     _dteDebugger.LocalProcesses.Cast<Process3>()
-                                .Where(
-                                    process =>
-                                    stored.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
-                                .ToList();
+                        .Where(process => storedProcesses.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
 
-                if (processes.Count > 0)
+                if (processes.Any())
                 {
-                    var unavailable =
-                        stored.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
+                    var unavailable = storedProcesses.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
                     if (unavailable.Any())
                     {
                         if (DialogResult.OK !=
-                            AskQuestion(
-                                string.Format(
-                                    "Some of historic processes not running: {0}. Continue to resurrect rest of them?",
-                                    string.Join(",", unavailable.Select(Path.GetFileName)))))
+                            AskQuestion(string.Format(
+                                "Some of the historic processes not alive:\n{0}\n\nContinue to resurrect the debugging session without them?",
+                                string.Join(",\n", unavailable.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
                         {
                             return;
                         }
                     }
 
+                    var engines = new List<Engine>();
                     var transport = _dteDebugger.Transports.Item("default");
-                    var engines = new[] { transport.Engines.Item("managed/native") };
+                    var storedEngines = HistoricStorage.Instance.GetEngines().ToList();
+                    foreach (Engine engine in transport.Engines)
+                    {
+                        foreach (var id in storedEngines)
+                        {
+                            if (Guid.Parse(engine.ID) == Guid.Parse(id))
+                            {
+                                engines.Add(engine);
+                                break;
+                            }
+                        }
+                    }
                     foreach (var process in processes)
                     {
-                        process.Attach2(engines);
+                        process.Attach2(engines.Any() ? engines : new List<Engine> {transport.Engines.Item("managed")});
                     }
                 }
                 else
                 {
-                    ShowMessage("No historic processes found running. Sorry, everything too dead to resurrect.");
+                    ShowMessage("No historic processes found alive. Debug session cannot be resurrected.");
                 }
             }
         }
@@ -173,7 +181,7 @@ namespace Resurrect
                 message,
                 string.Empty,
                 0,
-                OLEMSGBUTTON.OLEMSGBUTTON_OKCANCEL,
+                OLEMSGBUTTON.OLEMSGBUTTON_YESNO,
                 OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST,
                 OLEMSGICON.OLEMSGICON_WARNING,
                 0, // false

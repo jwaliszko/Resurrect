@@ -17,6 +17,7 @@ namespace Resurrect
         }
 
         private IList<string> _processes = new List<string>();
+        private IList<Guid> _engines = new List<Guid>();
         private readonly RegistryKey _storeTarget;
         private static DTE2 _application;
         private static HistoricStorage _instance;
@@ -47,15 +48,35 @@ namespace Resurrect
         }
 
         public IEnumerable<string> GetProcesses()
-        {        
+        {
             using (var key = _storeTarget.OpenSubKey(KeyName))
             {
                 if (key != null)
                 {
-                    var storedProcesses = key.GetValue(KeyValue) as string;
-                    if (storedProcesses != null)
+                    var value = key.GetValue(KeyValue) as string;
+                    if (value != null)
                     {
-                        return storedProcesses.Split(new[] {','});
+                        var processes = value.Split(new[] {'|'}).FirstOrDefault();
+                        if (!string.IsNullOrEmpty(processes))
+                            return processes.Split(new[] {','});
+                    }
+                }
+                return new string[0];
+            }
+        }
+
+        public IEnumerable<string> GetEngines()
+        {
+            using (var key = _storeTarget.OpenSubKey(KeyName))
+            {
+                if (key != null)
+                {
+                    var value = key.GetValue(KeyValue) as string;
+                    if (value != null)
+                    {
+                        var engines = value.Split(new[] {'|'}).Skip(1).FirstOrDefault();
+                        if (!string.IsNullOrEmpty(engines))
+                            return engines.Split(new[] {','});
                     }
                 }
                 return new string[0];
@@ -68,28 +89,29 @@ namespace Resurrect
                                    .Select(x => x.Trim().ToLowerInvariant())
                                    .Distinct()
                                    .ToList();
+            _engines = _engines.Distinct().ToList();
         }
 
-        public void Subscribe(string item)
+        public void SubscribeProcess(string item)
         {
             _processes.Add(item.Trim().ToLowerInvariant());
             Sanitize();
         }
 
-        public void Unsubscribe(string item)
+        public void SubscribeEngine(Guid item)
         {
+            _engines.Add(item);
             Sanitize();
-            _processes.Remove(item.Trim().ToLowerInvariant());
         }
 
         public bool IsAnyStored()
         {
-            using (var key = _storeTarget.OpenSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
+            using (var key = _storeTarget.OpenSubKey(KeyName))
             {
                 if (key != null)
                 {
-                    var storedProcesses = key.GetValue(KeyValue) as string;
-                    return storedProcesses != null && storedProcesses.Split(new[] {','}).Any();
+                    var value = key.GetValue(KeyValue) as string;
+                    return !string.IsNullOrEmpty(value);
                 }
                 return false;
             }
@@ -97,7 +119,7 @@ namespace Resurrect
 
         public void Persist()
         {
-            if (_processes.Any())
+            if (_processes.Any() && _engines.Any())
             {
                 using (var key = _storeTarget.OpenSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree) ??
                                  _storeTarget.CreateSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
@@ -105,8 +127,11 @@ namespace Resurrect
                     if (key == null)
                         throw new Exception("Resurrect could not store processes for further usage: registry problem.");
 
-                    key.SetValue(KeyValue, string.Join(",", _processes));
+                    var value = string.Format("{0}|{1}", string.Join(",", _processes), string.Join(",", _engines));
+                    key.SetValue(KeyValue, value);
+
                     _processes.Clear();
+                    _engines.Clear();
                 }
             }
         }
