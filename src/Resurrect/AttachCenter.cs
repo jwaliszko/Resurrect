@@ -138,7 +138,7 @@ namespace Resurrect
                     }
                     foreach (var process in processes)
                     {
-                        process.Attach2(engines.Any() ? engines : new List<Engine> {transport.Engines.Item("managed")});
+                        process.Attach2(engines.Any() ? engines : new List<Engine> {transport.Engines.Item("managed/native")});
                     }
                 }
                 else
