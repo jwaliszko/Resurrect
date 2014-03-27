@@ -6,7 +6,7 @@
   <entry>
     <id>A5A01D2F-FEFD-4FE2-88D0-1CDCDEE1A132</id>
     <title type="text">Resurrect</title>
-    <summary type="text">Visual Studio extension which allows to attach debugger to previously debugged processes.</summary>
+    <summary type="text">Visual Studio extension which resurrects debugging session with previously debugged processes re-attached.</summary>
     <published>2013-04-16T16:33:44+0100</published>
     <updated>2013-04-16T16:33:44+0100</updated>
     <author>
@@ -14,13 +14,13 @@
     </author>
     <link rel="alternate" type="text/html" href="https://github.com/JaroslawWaliszko/Resurrect"/>
     <!-- icon should be 32 x 32 pixels -->
-    <link rel="icon" type="text" href="Resources/icon.png"/>
+    <link rel="icon" type="text" href="Resources/icon32.png"/>
     <!-- preview image should be 200 x 200 pixels -->
     <link rel="previewimage" type="text" href="Resources/screenshot.png"/>
     <content type="application/octet-stream" src="Resurrect.vsix" />
     <Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/developer/vsx-syndication-schema/2010">
       <Id>ae98c9e5-8e14-4c92-b45a-c4fd24a498ef</Id>
-      <Version>1.1</Version>
+      <Version>1.0</Version>
       <References />
       <Rating xsi:nil="true" />
       <RatingCount xsi:nil="true" />

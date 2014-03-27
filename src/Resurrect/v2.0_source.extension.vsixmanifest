@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="ae98c9e5-8e14-4c92-b45a-c4fd24a498ef" Version="1.0" Language="en-US" Publisher="Jaroslaw Waliszko" />
+    <DisplayName>Resurrect</DisplayName>
+    <Description xml:space="preserve">Resurrects debugging session with previously debugged processes re-attached.</Description>
+    <MoreInfo>https://github.com/JaroslawWaliszko/Resurrect</MoreInfo>
+    <License>LICENSE.txt</License>
+    <Icon>Resources\icon32.png</Icon>
+    <PreviewImage>Resources\screenshot.png</PreviewImage>
+  </Metadata>
+  <Installation InstalledByMsi="false">
+    <InstallationTarget Version="[11.0,12.0]" Id="Microsoft.VisualStudio.Pro" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.5" />
+    <Dependency Id="Microsoft.VisualStudio.MPF.11.0" DisplayName="Visual Studio MPF 11.0" d:Source="Installed" Version="11.0" />
+  </Dependencies>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+  </Assets>
+</PackageManifest>

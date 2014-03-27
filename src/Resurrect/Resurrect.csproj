@@ -133,11 +133,11 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\icon.png">
+    <Content Include="Resources\icon32.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Resources\Images.png">
+    <Content Include="Resources\icon16.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="LICENSE.txt">
@@ -148,6 +148,8 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Content Include="v1.0_source.extension.vsixmanifest" />
+    <Content Include="v2.0_source.extension.vsixmanifest" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Package.ico">
