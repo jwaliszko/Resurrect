@@ -116,7 +116,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\icon.pdn" />
-    <None Include="feed.sample.atom">
+    <None Include="resurrect.feed.atom">
       <SubType>Designer</SubType>
     </None>
     <None Include="source.extension.vsixmanifest">
@@ -144,17 +144,15 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Resource Include="Resources\package.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
     <Content Include="Resources\screenshot.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="v1.0_source.extension.vsixmanifest" />
     <Content Include="v2.0_source.extension.vsixmanifest" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Resources\Package.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
