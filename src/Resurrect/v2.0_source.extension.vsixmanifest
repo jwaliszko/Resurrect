@@ -3,7 +3,7 @@
   <Metadata>
     <Identity Id="ae98c9e5-8e14-4c92-b45a-c4fd24a498ef" Version="1.0" Language="en-US" Publisher="Jaroslaw Waliszko" />
     <DisplayName>Resurrect</DisplayName>
-    <Description xml:space="preserve">Resurrects debugging session with previously debugged processes re-attached.</Description>
+    <Description xml:space="preserve">Resurrects debugging session with previously attached processes.</Description>
     <MoreInfo>https://github.com/JaroslawWaliszko/Resurrect</MoreInfo>
     <License>LICENSE.txt</License>
     <Icon>Resources\icon32.png</Icon>

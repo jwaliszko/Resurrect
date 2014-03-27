@@ -6,7 +6,7 @@
   <entry>
     <id>A5A01D2F-FEFD-4FE2-88D0-1CDCDEE1A132</id>
     <title type="text">Resurrect</title>
-    <summary type="text">Visual Studio extension which resurrects debugging session with previously debugged processes re-attached.</summary>
+    <summary type="text">Resurrects debugging session with previously attached processes.</summary>
     <published>2013-04-16T16:33:44+0100</published>
     <updated>2013-04-16T16:33:44+0100</updated>
     <author>
