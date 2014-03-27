@@ -37,29 +37,27 @@ namespace Resurrect
             if (process != null)
             {
                 string processName;
-                process.GetName((uint) enum_GETNAME_TYPE.GN_FILENAME, out processName);
-
-                if (!processName.EndsWith("vshost.exe"))
+                if (process.GetName((uint) enum_GETNAME_TYPE.GN_FILENAME, out processName) == VSConstants.S_OK)
                 {
-                    if (debugEvent is IDebugProcessCreateEvent2)
-                        AttachCenter.Instance.Freeze();
-                    if (debugEvent is IDebugProcessDestroyEvent2)
-                        HistoricStorage.Instance.SubscribeProcess(processName);
+                    if (!processName.EndsWith("vshost.exe"))
+                    {
+                        if (debugEvent is IDebugProcessCreateEvent2)
+                            AttachCenter.Instance.Freeze();
+                        if (debugEvent is IDebugProcessDestroyEvent2)
+                            HistoricStorage.Instance.SubscribeProcess(processName);
+                        if (debugEvent is IDebugLoadCompleteEvent2)
+                        {
+                            if (program != null)
+                            {
+                                string engineName;
+                                Guid engineId;
+                                if (program.GetEngineInfo(out engineName, out engineId) == VSConstants.S_OK)
+                                    HistoricStorage.Instance.SubscribeEngine(engineId);
+                            }
+                        }
+                    }
                 }
-
             }
-
-            if (debugEvent is IDebugLoadCompleteEvent2)
-            {
-                if (program != null)
-                {
-                    string engineName;
-                    Guid engineId;
-                    program.GetEngineInfo(out engineName, out engineId);
-                    HistoricStorage.Instance.SubscribeEngine(engineId);
-                }
-            }
-
             return VSConstants.S_OK;
         }
     }

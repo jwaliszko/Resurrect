@@ -124,7 +124,7 @@ namespace Resurrect
 
                     var engines = new List<Engine>();
                     var transport = _dteDebugger.Transports.Item("default");
-                    var storedEngines = HistoricStorage.Instance.GetEngines().ToList();
+                    var storedEngines = HistoricStorage.Instance.GetEngines().ToList();                    
                     foreach (Engine engine in transport.Engines)
                     {
                         foreach (var id in storedEngines)
@@ -138,7 +138,7 @@ namespace Resurrect
                     }
                     foreach (var process in processes)
                     {
-                        process.Attach2(engines.Any() ? engines : new List<Engine> {transport.Engines.Item("managed/native")});
+                        process.Attach2(engines.Any() ? engines.ToArray() : new[] { transport.Engines.Item("Managed/Native") });
                     }
                 }
                 else
