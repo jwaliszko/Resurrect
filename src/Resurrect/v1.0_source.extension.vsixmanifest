@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Vsix Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
-  <Identifier Id="e26234dd-9654-4df8-aa5e-68c2044afaa4">
+  <Identifier Id="ae98c9e5-8e14-4c92-b45a-c4fd24a498ef">
     <Name>Resurrect</Name>
     <Author>Jaroslaw Waliszko</Author>
     <Version>1.0</Version>
