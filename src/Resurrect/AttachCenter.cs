@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using EnvDTE80;
 using EnvDTE90;
@@ -21,7 +22,7 @@ namespace Resurrect
         private OleMenuCommand _command;
 
         private static AttachCenter _instance;
-        private static readonly object _locker = new object();
+        private static readonly object _locker = new object();        
 
         private AttachCenter(IServiceProvider provider, Debugger3 dteDebugger)
         {
@@ -136,19 +137,42 @@ namespace Resurrect
                             }
                         }
                     }
-                    foreach (var process in processes)
-                    {
-                        process.Attach2(engines.Any() ? engines.ToArray() : new[] { transport.Engines.Item("Managed/Native") });
-                    }
+
+                    PerformAttachOperation(processes, engines, transport);
                 }
                 else
                 {
-                    ShowMessage("No historic processes found alive. Debug session cannot be resurrected.");
+                    ShowMessage("No historic processes found alive. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
                 }
             }
         }
 
-        private void ShowMessage(string message)
+        private void PerformAttachOperation(IList<Process3> processes, IList<Engine> engines, Transport transport)
+        {
+            try
+            {
+                foreach (var process in processes)
+                {
+                    process.Attach2(engines.Any() ? engines.ToArray() : new[] {transport.Engines.Item("Managed/Native")});
+                }
+            }
+            catch (COMException ex)
+            {
+                ThrowElevationRequired();
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(string.Format("Unexpected problem: {0}.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+            }
+        }
+
+        private void ThrowElevationRequired()
+        {
+            const int ERROR_ELEVATION_REQUIRED = unchecked((int)0x800702E4);
+            Marshal.ThrowExceptionForHR(ERROR_ELEVATION_REQUIRED);
+        }
+
+        private void ShowMessage(string message, OLEMSGICON type)
         {
 			var shell = (IVsUIShell)_provider.GetService(typeof(SVsUIShell));
 			var clsid = Guid.Empty;
@@ -163,7 +187,7 @@ namespace Resurrect
 				0,
 				OLEMSGBUTTON.OLEMSGBUTTON_OK,
 				OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST,
-				OLEMSGICON.OLEMSGICON_INFO,
+                type,
 				0, // false
                 out pnResult);
         }
@@ -187,6 +211,6 @@ namespace Resurrect
                 0, // false
                 out pnResult);
             return pnResult;
-        }
+        }        
     }
 }
