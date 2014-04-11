@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using EnvDTE;
 using EnvDTE80;
 using Microsoft.Win32;
 
@@ -10,22 +11,59 @@ namespace Resurrect
     public class HistoricStorage
     {
         private const string KeyName = "Resurrect";
-
         private string KeyValue
         {
             get { return Path.GetFileName(_application.Solution.FullName); }
-        }
+        }        
 
-        private IList<string> _processes = new List<string>();
-        private IList<Guid> _engines = new List<Guid>();
+        private IList<string> _sessionProcesses = new List<string>();
+        private IList<Guid> _sessionEngines = new List<Guid>();
+        private readonly SolutionEvents _solutionEvents;
         private readonly RegistryKey _storeTarget;
-        private static DTE2 _application;
-        private static HistoricStorage _instance;
+        private readonly DTE2 _application;
+        private static HistoricStorage _instance;        
         private static readonly object _locker = new object();
 
-        private HistoricStorage(RegistryKey storeTarget)
+        public EventHandler<EventArgs> SolutionActivated;
+        public EventHandler<EventArgs> SolutionDeactivated;
+
+        private HistoricStorage(RegistryKey storeTarget, DTE2 application)
         {
             _storeTarget = storeTarget;
+            _application = application;
+
+            Processes = new string[0];
+            Engines = new Guid[0];
+
+            _solutionEvents = application.Events.SolutionEvents;
+            _solutionEvents.Opened += SolutionOpened;
+            _solutionEvents.AfterClosing += SolutionClosed; 
+        }
+
+        void SolutionOpened()
+        {
+            Processes = GetProcesses();
+            Engines = GetEngines();
+            OnSolutionOpened();
+        }        
+
+        void SolutionClosed()
+        {
+            Processes = new string[0];
+            Engines = new Guid[0];
+            OnSolutionClosed();
+        }
+
+        private void OnSolutionOpened()
+        {
+            if (SolutionActivated != null)
+                SolutionActivated(this, null);
+        }
+
+        private void OnSolutionClosed()
+        {
+            if (SolutionDeactivated != null)
+                SolutionDeactivated(this, null);
         }
 
         public static void Instantiate(RegistryKey storeTarget, DTE2 application)
@@ -33,9 +71,8 @@ namespace Resurrect
             lock (_locker)
             {
                 if (_instance != null)
-                    throw new ArgumentException("HistoricStorage of Resurrect is already instantiated.");
-                _instance = new HistoricStorage(storeTarget);
-                _application = application;
+                    throw new ArgumentException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
+                _instance = new HistoricStorage(storeTarget, application);                               
             }
         }
 
@@ -47,7 +84,10 @@ namespace Resurrect
             }
         }
 
-        public IEnumerable<string> GetProcesses()
+        public IEnumerable<string> Processes { get; private set; }
+        public IEnumerable<Guid> Engines { get; private set; }
+
+        private IEnumerable<string> GetProcesses()
         {
             using (var key = _storeTarget.OpenSubKey(KeyName))
             {
@@ -65,7 +105,7 @@ namespace Resurrect
             }
         }
 
-        public IEnumerable<string> GetEngines()
+        private IEnumerable<Guid> GetEngines()
         {
             using (var key = _storeTarget.OpenSubKey(KeyName))
             {
@@ -76,50 +116,36 @@ namespace Resurrect
                     {
                         var engines = value.Split(new[] {'|'}).Skip(1).FirstOrDefault();
                         if (!string.IsNullOrEmpty(engines))
-                            return engines.Split(new[] {','});
+                            return engines.Split(new[] {','}).Select(Guid.Parse);
                     }
                 }
-                return new string[0];
+                return new Guid[0];
             }
         }
 
         private void Sanitize()
         {
-            _processes = _processes.Where(x => !string.IsNullOrWhiteSpace(x))
+            _sessionProcesses = _sessionProcesses.Where(x => !string.IsNullOrWhiteSpace(x))
                                    .Select(x => x.Trim().ToLowerInvariant())
-                                   .Distinct()
-                                   .ToList();
-            _engines = _engines.Distinct().ToList();
+                                   .Distinct().ToList();
+            _sessionEngines = _sessionEngines.Distinct().ToList();
         }
 
         public void SubscribeProcess(string item)
         {
-            _processes.Add(item.Trim().ToLowerInvariant());
+            _sessionProcesses.Add(item.Trim().ToLowerInvariant());
             Sanitize();
         }
 
         public void SubscribeEngine(Guid item)
         {
-            _engines.Add(item);
+            _sessionEngines.Add(item);
             Sanitize();
-        }
-
-        public bool IsAnyStored()
-        {
-            using (var key = _storeTarget.OpenSubKey(KeyName))
-            {
-                if (key != null)
-                {
-                    var value = key.GetValue(KeyValue) as string;
-                    return !string.IsNullOrEmpty(value);
-                }
-                return false;
-            }
         }
 
         public void Persist()
         {
-            if (_processes.Any() && _engines.Any())
+            if (_sessionProcesses.Any() && _sessionEngines.Any())
             {
                 using (var key = _storeTarget.OpenSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree) ??
                                  _storeTarget.CreateSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
@@ -127,12 +153,15 @@ namespace Resurrect
                     if (key == null)
                         throw new Exception("Resurrect could not store processes for further usage: registry problem.");
 
-                    var value = string.Format("{0}|{1}", string.Join(",", _processes), string.Join(",", _engines));
+                    var value = string.Format("{0}|{1}", string.Join(",", _sessionProcesses), string.Join(",", _sessionEngines));
                     key.SetValue(KeyValue, value);
 
-                    _processes.Clear();
-                    _engines.Clear();
+                    _sessionProcesses.Clear();
+                    _sessionEngines.Clear();
                 }
+
+                Processes = GetProcesses();
+                Engines = GetEngines();
             }
         }
     }

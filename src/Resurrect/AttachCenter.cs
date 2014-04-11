@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Management;
 using EnvDTE80;
 using EnvDTE90;
 using Microsoft.Internal.VisualStudio.PlatformUI;
@@ -18,6 +19,7 @@ namespace Resurrect
     {        
         private readonly IServiceProvider _provider;
         private readonly Debugger3 _dteDebugger;
+        private ManagementEventWatcher _watcher;
         private bool _freezed;
         private OleMenuCommand _command;
 
@@ -36,7 +38,7 @@ namespace Resurrect
             lock (_locker)
             {
                 if (_instance != null)
-                    throw new ArgumentException("AttachCenter of Resurrect is already instantiated.");
+                    throw new ArgumentException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
                 _instance = new AttachCenter(provider, dteDebugger);
                 _instance.BindCommand(enabled: false);
                 _instance.SendPatrol();
@@ -65,7 +67,7 @@ namespace Resurrect
 
         private void BindCommand(bool enabled)
         {
-            // Add our command handlers for menu (commands must exist in the .vsct file)
+            // Add our command handlers for menu (commands must exist in the .vsct file).
             var mcs = _provider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
             if (null != mcs)
             {
@@ -78,20 +80,46 @@ namespace Resurrect
 
         private void SendPatrol()
         {
-            // Run background checking.
-            Task.Factory.StartNew(Patrol);
-        }        
+            HistoricStorage.Instance.SolutionActivated += (sender, args) => Refresh();
+            HistoricStorage.Instance.SolutionDeactivated += (sender, args) => Refresh();
 
-        private void Patrol()
+            // Run background checking.
+            Task.Factory.StartNew(VisualPatrol);
+            // Task.Factory.StartNew(SystemPatrol); //ToDo: uncomment when UI support will be done
+        }
+
+        private void VisualPatrol()
         {
             const int delay = 500;
             while (true)    // Patrol for safety reasons and in case of multiple VS instances running, which can change debug history.
             {
-                _command.Enabled = !_freezed && HistoricStorage.Instance.IsAnyStored();
-                _command.Text = string.Format("Resurrect {0}",
-                    string.Join(", ", HistoricStorage.Instance.GetProcesses().Select(Path.GetFileName)));
+                Refresh();
                 Thread.Sleep(delay);
             }
+        }
+
+        private void Refresh()
+        {
+            _command.Enabled = !_freezed && HistoricStorage.Instance.Processes.Any();
+            _command.Text = string.Format("Resurrect {0}", string.Join(", ", HistoricStorage.Instance.Processes.Select(Path.GetFileName)));
+        }
+
+        private void SystemPatrol()
+        {
+            _watcher = new ManagementEventWatcher("SELECT ProcessName FROM Win32_ProcessStartTrace");
+            _watcher.EventArrived += ProcessStarted;
+            _watcher.Start();
+        }
+
+        void ProcessStarted(object sender, EventArrivedEventArgs e)
+        {
+            var historicProcesses = HistoricStorage.Instance.Processes.ToList();
+            if (!historicProcesses.Any())
+                return;
+
+            var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
+            if (historicProcesses.Select(Path.GetFileName).Contains(processName, StringComparer.OrdinalIgnoreCase))            
+                AttachToProcesses(this, null);
         }
 
         /// <summary>
@@ -101,50 +129,48 @@ namespace Resurrect
         /// </summary>
         private void AttachToProcesses(object sender, EventArgs e)
         {
-            if (!_freezed && HistoricStorage.Instance.IsAnyStored())
+            if (_freezed) return;
+
+            var historicProcesses = HistoricStorage.Instance.Processes.ToList();
+            if (!historicProcesses.Any()) return;
+
+            var processes = _dteDebugger.LocalProcesses.Cast<Process3>()
+                .Where(process => historicProcesses.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            if (!processes.Any())
             {
-                var storedProcesses = HistoricStorage.Instance.GetProcesses();
-                var processes =
-                    _dteDebugger.LocalProcesses.Cast<Process3>()
-                        .Where(process => storedProcesses.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
-                        .ToList();
+                ShowMessage("No historic processes found alive. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
+                return;
+            }
 
-                if (processes.Any())
+            var unavailable = historicProcesses.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
+            if (unavailable.Any())
+            {
+                if (DialogResult.OK !=
+                    AskQuestion(string.Format(
+                        "Some of the historic processes not alive:\n{0}\n\nContinue to resurrect the debugging session without them?",
+                        string.Join(",\n", unavailable.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
                 {
-                    var unavailable = storedProcesses.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
-                    if (unavailable.Any())
-                    {
-                        if (DialogResult.OK !=
-                            AskQuestion(string.Format(
-                                "Some of the historic processes not alive:\n{0}\n\nContinue to resurrect the debugging session without them?",
-                                string.Join(",\n", unavailable.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
-                        {
-                            return;
-                        }
-                    }
-
-                    var engines = new List<Engine>();
-                    var transport = _dteDebugger.Transports.Item("default");
-                    var storedEngines = HistoricStorage.Instance.GetEngines().ToList();                    
-                    foreach (Engine engine in transport.Engines)
-                    {
-                        foreach (var id in storedEngines)
-                        {
-                            if (Guid.Parse(engine.ID) == Guid.Parse(id))
-                            {
-                                engines.Add(engine);
-                                break;
-                            }
-                        }
-                    }
-
-                    PerformAttachOperation(processes, engines, transport);
-                }
-                else
-                {
-                    ShowMessage("No historic processes found alive. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
+                    return;
                 }
             }
+
+            var engines = new List<Engine>();
+            var transport = _dteDebugger.Transports.Item("default");
+            var historicEngines = HistoricStorage.Instance.Engines.ToList();
+            foreach (Engine engine in transport.Engines)
+            {
+                foreach (var id in historicEngines)
+                {
+                    if (Guid.Parse(engine.ID) == id)
+                    {
+                        engines.Add(engine);
+                        break;
+                    }
+                }
+            }
+
+            PerformAttachOperation(processes, engines, transport);
         }
 
         private void PerformAttachOperation(IList<Process3> processes, IList<Engine> engines, Transport transport)
