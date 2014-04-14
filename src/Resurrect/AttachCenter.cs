@@ -19,9 +19,9 @@ namespace Resurrect
     {        
         private readonly IServiceProvider _provider;
         private readonly Debugger3 _dteDebugger;
+        private readonly OleMenuCommand[] _commands;
         private ManagementEventWatcher _watcher;
-        private bool _freezed;
-        private OleMenuCommand _command;
+        private bool _freezed;        
 
         private static AttachCenter _instance;
         private static readonly object _locker = new object();        
@@ -30,6 +30,7 @@ namespace Resurrect
         {
             _provider = provider;
             _dteDebugger = dteDebugger;
+            _commands = new OleMenuCommand[2];
             _freezed = false;
         }
 
@@ -56,13 +57,13 @@ namespace Resurrect
         public void Freeze()
         {
             _freezed = true;
-            _command.Enabled = false;
+            _commands[0].Enabled = false;
         }
 
         public void Unfreeze()
         {
             _freezed = false;
-            _command.Enabled = true;
+            _commands[0].Enabled = true;            
         }
 
         private void BindCommand(bool enabled)
@@ -73,22 +74,26 @@ namespace Resurrect
             {
                 // Create the command for the menu item.
                 var commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidResurrect);
-                _command = new OleMenuCommand(AttachToProcesses, commandId) {Enabled = enabled};
-                mcs.AddCommand(_command);
+                _commands[0] = new OleMenuCommand(AttachToProcesses, commandId) { Enabled = enabled };                
+                mcs.AddCommand(_commands[0]);
+
+                commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidAutoAttach);
+                _commands[1] = new OleMenuCommand(ToggleAutoAttachSetting, commandId) { Checked = Storage.Instance.Auto };                
+                mcs.AddCommand(_commands[1]);
             }            
         }
 
         private void SendPatrol()
         {
-            HistoricStorage.Instance.SolutionActivated += (sender, args) => Refresh();
-            HistoricStorage.Instance.SolutionDeactivated += (sender, args) => Refresh();
+            Storage.Instance.SolutionActivated += (sender, args) => Refresh();
+            Storage.Instance.SolutionDeactivated += (sender, args) => Refresh();
 
             // Run background checking.
-            Task.Factory.StartNew(VisualPatrol);
-            // Task.Factory.StartNew(SystemPatrol); //ToDo: uncomment when UI support will be done
+            Task.Factory.StartNew(SendVisualPatrol);            
+            Task.Factory.StartNew(SendSystemPatrol);
         }
 
-        private void VisualPatrol()
+        private void SendVisualPatrol()
         {
             const int delay = 500;
             while (true)    // Patrol for safety reasons and in case of multiple VS instances running, which can change debug history.
@@ -100,11 +105,13 @@ namespace Resurrect
 
         private void Refresh()
         {
-            _command.Enabled = !_freezed && HistoricStorage.Instance.Processes.Any();
-            _command.Text = string.Format("Resurrect {0}", string.Join(", ", HistoricStorage.Instance.Processes.Select(Path.GetFileName)));
+            _commands[0].Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
+            _commands[0].Text = string.Format("Resurrect {0}", Storage.Instance.HistoricProcesses.Any()
+                ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
+                : "(no targets yet)");
         }
 
-        private void SystemPatrol()
+        private void SendSystemPatrol()
         {
             _watcher = new ManagementEventWatcher("SELECT ProcessName FROM Win32_ProcessStartTrace");
             _watcher.EventArrived += ProcessStarted;
@@ -113,12 +120,12 @@ namespace Resurrect
 
         void ProcessStarted(object sender, EventArrivedEventArgs e)
         {
-            var historicProcesses = HistoricStorage.Instance.Processes.ToList();
-            if (!historicProcesses.Any())
-                return;
+            if (!Storage.Instance.Auto) return;
+            if (_freezed) return;
+            if (!Storage.Instance.HistoricProcesses.Any()) return;
 
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
-            if (historicProcesses.Select(Path.GetFileName).Contains(processName, StringComparer.OrdinalIgnoreCase))            
+            if (Storage.Instance.HistoricProcesses.Select(Path.GetFileName).Contains(processName, StringComparer.OrdinalIgnoreCase))            
                 AttachToProcesses(this, null);
         }
 
@@ -130,12 +137,10 @@ namespace Resurrect
         private void AttachToProcesses(object sender, EventArgs e)
         {
             if (_freezed) return;
-
-            var historicProcesses = HistoricStorage.Instance.Processes.ToList();
-            if (!historicProcesses.Any()) return;
+            if (!Storage.Instance.HistoricProcesses.Any()) return;
 
             var processes = _dteDebugger.LocalProcesses.Cast<Process3>()
-                .Where(process => historicProcesses.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
+                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
                 .ToList();
             if (!processes.Any())
             {
@@ -143,10 +148,10 @@ namespace Resurrect
                 return;
             }
 
-            var unavailable = historicProcesses.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
+            var unavailable = Storage.Instance.HistoricProcesses.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
             if (unavailable.Any())
             {
-                if (DialogResult.OK !=
+                if (DialogResult.Yes !=
                     AskQuestion(string.Format(
                         "Some of the historic processes not alive:\n{0}\n\nContinue to resurrect the debugging session without them?",
                         string.Join(",\n", unavailable.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
@@ -157,7 +162,7 @@ namespace Resurrect
 
             var engines = new List<Engine>();
             var transport = _dteDebugger.Transports.Item("default");
-            var historicEngines = HistoricStorage.Instance.Engines.ToList();
+            var historicEngines = Storage.Instance.HistoricEngines.ToList();
             foreach (Engine engine in transport.Engines)
             {
                 foreach (var id in historicEngines)
@@ -171,6 +176,12 @@ namespace Resurrect
             }
 
             PerformAttachOperation(processes, engines, transport);
+        }
+
+        private void ToggleAutoAttachSetting(object sender, EventArgs e)
+        {
+            Storage.Instance.Auto = !Storage.Instance.Auto;
+            _commands[1].Checked = Storage.Instance.Auto;
         }
 
         private void PerformAttachOperation(IList<Process3> processes, IList<Engine> engines, Transport transport)

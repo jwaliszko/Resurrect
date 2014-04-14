@@ -19,7 +19,7 @@
 
   <!--This header contains the command ids for the menus provided by the shell. -->
   <Extern href="vsshlids.h"/>
-
+  
   <!--The Commands section is where we the commands, menus and menu groups are defined.
       This section uses a Guid to identify the package that provides the command defined inside it. -->
   <Commands package="guidResurrectPkg">
@@ -47,7 +47,7 @@
          group as the part of a menu contained between two lines. The parent of a group 
          must be a menu. -->
     <Groups>
-      <Group guid="guidResurrectCmdSet" id="cmdidResurrectStandardMenuGroup" priority="0x000">
+      <Group guid="guidResurrectCmdSet" id="cmdidResurrectStandardMenuGroup">
 				<Parent guid="guidResurrectCmdSet" id="cmdidResurrectMenuController"/>
 			</Group>
     </Groups>
@@ -63,15 +63,19 @@
               <CommandFlag>DefaultInvisible</CommandFlag>
               <CommandFlag>DynamicVisibility</CommandFlag>
           If you do not want an image next to your command, remove the Icon node /> -->
-      <Button guid="guidResurrectCmdSet" id="cmdidResurrect" priority="0x0100" type="Button">
+      <Button guid="guidResurrectCmdSet" id="cmdidResurrect" type="Button">
         <Icon guid="guidImages" id="resurrectBitmap" />
-        <CommandFlag>TextChanges</CommandFlag>
         <CommandFlag>DontCache</CommandFlag>
-        <CommandFlag>DynamicVisibility</CommandFlag>
-        <CommandFlag>FixMenuController</CommandFlag>
-        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>        
+        <CommandFlag>FixMenuController</CommandFlag>        
         <Strings>
           <ButtonText>Resurrect</ButtonText>
+        </Strings>
+      </Button>
+      <Button guid="guidResurrectCmdSet" id="cmdidAutoAttach" type="Button">
+        <CommandFlag>DontCache</CommandFlag>
+        <Strings>          
+          <ButtonText>Automatic resurrection on process startup (On/Off)</ButtonText>
         </Strings>
       </Button>
     </Buttons>
@@ -89,25 +93,30 @@
   </Commands>
 
   <CommandPlacements> 
-    <!-- On standard menu, next to Run button -->
+    <!-- On standard toolbar, next to Start button. -->
 		<CommandPlacement guid="guidResurrectCmdSet" id="cmdidResurrect" priority="0x1">
 			<Parent guid="guidResurrectCmdSet" id="cmdidResurrectStandardMenuGroup"/>
 		</CommandPlacement>
+    <CommandPlacement guid="guidResurrectCmdSet" id="cmdidAutoAttach" priority="0x2">
+      <Parent guid="guidResurrectCmdSet" id="cmdidResurrectStandardMenuGroup"/>
+    </CommandPlacement>
   </CommandPlacements>
 
   <KeyBindings>
-    <KeyBinding guid="guidResurrectCmdSet" id="cmdidResurrect" editor="guidVSStd97" mod1="Control" mod2="Control" key1="R" key2="0" />    
+    <KeyBinding guid="guidResurrectCmdSet" id="cmdidResurrect" editor="guidVSStd97" mod1="Control" mod2="Control" key1="R" key2="H" />    
   </KeyBindings>
   
   <Symbols>
     <!-- This is the package guid. -->
     <GuidSymbol name="guidResurrectPkg" value="{ae98c9e5-8e14-4c92-b45a-c4fd24a498ef}" />
     
-    <!-- This is the guid used to group the menu commands together -->
+    <!-- This is the guid used to group the menu commands together. -->
     <GuidSymbol name="guidResurrectCmdSet" value="{b4c5fb60-9e6d-438e-a36f-6edb60e0260f}">
       <IDSymbol name="cmdidResurrectMenuController" value="0x1"/>
-			<IDSymbol name="cmdidResurrectStandardMenuGroup" value="0x2" />      
+			<IDSymbol name="cmdidResurrectStandardMenuGroup" value="0x2" />
+      
       <IDSymbol name="cmdidResurrect" value="0x0100" />
+      <IDSymbol name="cmdidAutoAttach" value="0x0200" />
     </GuidSymbol>
            
     <GuidSymbol name="guidImages" value="{b859c36f-b72e-47c3-afa7-080d3d6bddf3}" >

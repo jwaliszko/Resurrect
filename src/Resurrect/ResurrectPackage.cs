@@ -61,7 +61,7 @@ namespace Resurrect
                     var dteDebugger = dte.Debugger as Debugger3;
                     if (dteDebugger != null)
                     {
-                        HistoricStorage.Instantiate(UserRegistryRoot, dte);
+                        Storage.Instantiate(UserRegistryRoot, dte);
                         AttachCenter.Instantiate(this, dteDebugger);                        
                         var guard = new DebugEventsHunter(debugger);
                         guard.Listen();

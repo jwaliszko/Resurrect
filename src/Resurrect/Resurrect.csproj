@@ -92,7 +92,7 @@
     <Compile Include="AttachCenter.cs" />
     <Compile Include="DebugEventsHunter.cs" />
     <Compile Include="Guids.cs" />
-    <Compile Include="HistoricStorage.cs" />
+    <Compile Include="Storage.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

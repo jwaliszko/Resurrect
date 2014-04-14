@@ -25,7 +25,7 @@ namespace Resurrect
         {
             if (mode == DBGMODE.DBGMODE_Design)
             {
-                HistoricStorage.Instance.Persist();
+                Storage.Instance.Persist();
                 AttachCenter.Instance.Unfreeze();
             }
             return VSConstants.S_OK;
@@ -44,7 +44,7 @@ namespace Resurrect
                         if (debugEvent is IDebugProcessCreateEvent2)
                             AttachCenter.Instance.Freeze();
                         if (debugEvent is IDebugProcessDestroyEvent2)
-                            HistoricStorage.Instance.SubscribeProcess(processName);
+                            Storage.Instance.SubscribeProcess(processName);
                         if (debugEvent is IDebugLoadCompleteEvent2)
                         {
                             if (program != null)
@@ -52,7 +52,7 @@ namespace Resurrect
                                 string engineName;
                                 Guid engineId;
                                 if (program.GetEngineInfo(out engineName, out engineId) == VSConstants.S_OK)
-                                    HistoricStorage.Instance.SubscribeEngine(engineId);
+                                    Storage.Instance.SubscribeEngine(engineId);
                             }
                         }
                     }
