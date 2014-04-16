@@ -60,7 +60,7 @@ namespace Resurrect
         {
             _freezed = false;
             Refresh();
-        }
+        }        
 
         private void BindCommands()
         {
@@ -91,9 +91,35 @@ namespace Resurrect
         private void Refresh()
         {
             _attachToProcessCommand.Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
-            _attachToProcessCommand.Text = string.Format("Resurrect {0}", Storage.Instance.HistoricProcesses.Any()
-                ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
-                : "(no targets yet)");
+            _attachToProcessCommand.Text = string.Format("Resurrect: {0}{1}",
+                Storage.Instance.HistoricProcesses.Any()
+                    ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
+                    : "(no targets yet)",
+                Storage.Instance.HistoricEngines.Any()
+                    ? string.Format(" // {0}", string.Join(",", GetEnginesNames(Storage.Instance.HistoricEngines)))
+                    : string.Empty);
+        }
+
+        private IEnumerable<string> GetEnginesNames(IEnumerable<Guid> ids)
+        {
+            var names = new List<string>();
+            var transport = _dteDebugger.Transports.Item("default");
+            foreach (var id in ids)
+            {
+                var found = false;
+                foreach (Engine engine in transport.Engines)
+                {
+                    if (Guid.Parse(engine.ID) == id)
+                    {
+                        names.Add(engine.Name);
+                        found = true;
+                        break;
+                    }
+                }
+                if(!found)
+                    names.Add("Unknown");
+            }
+            return names;
         }
 
         void ProcessStarted(object sender, EventArrivedEventArgs e)
@@ -133,20 +159,7 @@ namespace Resurrect
                 }
             }
 
-            var engines = new List<Engine>();
-            var transport = _dteDebugger.Transports.Item("default");
-            var historicEngines = Storage.Instance.HistoricEngines.ToList();
-            foreach (Engine engine in transport.Engines)
-            {
-                foreach (var id in historicEngines)
-                {
-                    if (Guid.Parse(engine.ID) == id)
-                    {
-                        engines.Add(engine);
-                        break;
-                    }
-                }
-            }
+            var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
 
             PerformAttachOperation(runningProcesses, engines);
         }
@@ -175,18 +188,16 @@ namespace Resurrect
             }
         }
 
-        private void PerformAttachOperation(IList<Process3> processes, IList<Engine> engines)
+        private void PerformAttachOperation(IEnumerable<Process3> processes, IEnumerable<string> engines)
         {
             try
             {
+                var array = engines.ToArray();
                 foreach (var process in processes)
                 {
                     if (!process.IsBeingDebugged)
                     {
-                        if (engines.Any())
-                            process.Attach2(engines.ToArray());
-                        else
-                            process.Attach();
+                        process.Attach2(array.Any() ? array : null);    // if no specific engines, null indicates to detect one
                     }
                 }
             }
