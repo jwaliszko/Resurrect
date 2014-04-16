@@ -14,7 +14,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 namespace Resurrect
 {
     public class AttachCenter
-    {        
+    {
         private readonly IServiceProvider _provider;
         private readonly Debugger3 _dteDebugger;
         private ManagementEventWatcher _watcher;
@@ -24,7 +24,7 @@ namespace Resurrect
         private OleMenuCommand _toggleAutoAttachCommand;
 
         private static AttachCenter _instance;
-        private static readonly object _locker = new object();        
+        private static readonly object _locker = new object();
 
         private AttachCenter(IServiceProvider provider, Debugger3 dteDebugger)
         {
@@ -103,36 +103,31 @@ namespace Resurrect
             if (!Storage.Instance.HistoricProcesses.Any()) return;
 
             var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
-            if (Storage.Instance.HistoricProcesses.Select(Path.GetFileName).Contains(processName, StringComparer.OrdinalIgnoreCase))            
+            if (Storage.Instance.HistoricProcesses.Select(Path.GetFileName).Contains(processName))
                 AttachToProcesses(this, null);
         }
 
-        /// <summary>
-        /// This function is the callback used to execute a command when the a menu item is clicked.
-        /// See the Initialize method to see how the menu item is associated to this function using
-        /// the OleMenuCommandService service and the MenuCommand class.
-        /// </summary>
         private void AttachToProcesses(object sender, EventArgs e)
-        {
+        {            
             if (_freezed) return;
             if (!Storage.Instance.HistoricProcesses.Any()) return;
 
-            var processes = _dteDebugger.LocalProcesses.Cast<Process3>()
-                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name, StringComparison.OrdinalIgnoreCase)))
+            var runningProcesses = _dteDebugger.LocalProcesses.Cast<Process3>()
+                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name)))
                 .ToList();
-            if (!processes.Any())
+            if (!runningProcesses.Any())
             {
                 ShowMessage("No historic processes found alive. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
                 return;
             }
 
-            var unavailable = Storage.Instance.HistoricProcesses.Except(processes.Select(x => x.Name), StringComparer.OrdinalIgnoreCase).ToList();
-            if (unavailable.Any())
+            var missingProcesses = Storage.Instance.HistoricProcesses.Except(runningProcesses.Select(x => x.Name)).ToList();
+            if (missingProcesses.Any())
             {
                 if (DialogResult.Yes !=
                     AskQuestion(string.Format(
                         "Some of the historic processes not alive:\n{0}\n\nContinue to resurrect the debugging session without them?",
-                        string.Join(",\n", unavailable.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
+                        string.Join(",\n", missingProcesses.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
                 {
                     return;
                 }
@@ -153,7 +148,7 @@ namespace Resurrect
                 }
             }
 
-            PerformAttachOperation(processes, engines);
+            PerformAttachOperation(runningProcesses, engines);
         }
 
         private void ToggleAutoAttachSetting(object sender, EventArgs e)

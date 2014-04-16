@@ -118,15 +118,13 @@ namespace Resurrect
 
         private void Sanitize()
         {
-            _sessionProcesses = _sessionProcesses.Where(x => !string.IsNullOrWhiteSpace(x))
-                                   .Select(x => x.Trim().ToLowerInvariant())
-                                   .Distinct().ToList();
+            _sessionProcesses = _sessionProcesses.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
             _sessionEngines = _sessionEngines.Distinct().ToList();
         }
 
         public void SubscribeProcess(string item)
         {
-            _sessionProcesses.Add(item.Trim().ToLowerInvariant());
+            _sessionProcesses.Add(item);
             Sanitize();
         }
 

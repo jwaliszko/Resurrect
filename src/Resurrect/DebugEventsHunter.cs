@@ -23,10 +23,15 @@ namespace Resurrect
 
         public int OnModeChange(DBGMODE mode)
         {
-            if (mode == DBGMODE.DBGMODE_Design)
+            switch (mode)
             {
-                Storage.Instance.Persist();
-                AttachCenter.Instance.Unfreeze();
+                case DBGMODE.DBGMODE_Run:
+                    AttachCenter.Instance.Freeze();
+                    break;
+                case DBGMODE.DBGMODE_Design:                
+                    Storage.Instance.Persist();
+                    AttachCenter.Instance.Unfreeze();
+                    break;
             }
             return VSConstants.S_OK;
         }
@@ -41,8 +46,6 @@ namespace Resurrect
                 {
                     if (!processName.EndsWith("vshost.exe"))
                     {
-                        if (debugEvent is IDebugProcessCreateEvent2)
-                            AttachCenter.Instance.Freeze();
                         if (debugEvent is IDebugProcessDestroyEvent2)
                             Storage.Instance.SubscribeProcess(processName);
                         if (debugEvent is IDebugLoadCompleteEvent2)
