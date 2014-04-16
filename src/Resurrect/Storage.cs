@@ -34,7 +34,6 @@ namespace Resurrect
 
             HistoricProcesses = new string[0];
             HistoricEngines = new Guid[0];
-            Auto = false;
 
             _solutionEvents = application.Events.SolutionEvents;
             _solutionEvents.Opened += SolutionOpened;
@@ -45,7 +44,6 @@ namespace Resurrect
         {
             HistoricProcesses = GetProcesses();
             HistoricEngines = GetEngines();
-            Auto = GetAuto();
             OnSolutionOpened();
         }        
 
@@ -80,31 +78,25 @@ namespace Resurrect
 
         public static Storage Instance
         {
-            get
-            {
-                return _instance;
-            }
+            get { return _instance; }
         }
 
         public IEnumerable<string> HistoricProcesses { get; private set; }
         public IEnumerable<Guid> HistoricEngines { get; private set; }
-        public bool Auto { get; set; }
 
         private IEnumerable<string> GetProcesses()
         {
             using (var key = _storeTarget.OpenSubKey(KeyName))
             {
-                if (key != null)
-                {
-                    var value = key.GetValue(KeyValue) as string;
-                    if (value != null)
-                    {
-                        var processes = value.Split(new[] {'|'}).FirstOrDefault();
-                        if (!string.IsNullOrEmpty(processes))
-                            return processes.Split(new[] {','});
-                    }
-                }
-                return new string[0];
+                if (key == null) 
+                    return new string[0];
+
+                var value = key.GetValue(KeyValue) as string;
+                if (value == null) 
+                    return new string[0];
+                
+                var processes = value.Split(new[] {'|'}).FirstOrDefault();
+                return !string.IsNullOrEmpty(processes) ? processes.Split(new[] {','}) : new string[0];
             }
         }
 
@@ -112,35 +104,15 @@ namespace Resurrect
         {
             using (var key = _storeTarget.OpenSubKey(KeyName))
             {
-                if (key != null)
-                {
-                    var value = key.GetValue(KeyValue) as string;
-                    if (value != null)
-                    {
-                        var engines = value.Split(new[] {'|'}).Skip(1).FirstOrDefault();
-                        if (!string.IsNullOrEmpty(engines))
-                            return engines.Split(new[] {','}).Select(Guid.Parse);
-                    }
-                }
-                return new Guid[0];
-            }
-        }
-
-        private bool GetAuto()
-        {
-            using (var key = _storeTarget.OpenSubKey(KeyName))
-            {
-                if (key != null)
-                {
-                    var value = key.GetValue(KeyValue) as string;
-                    if (value != null)
-                    {
-                        var auto = value.Split(new[] { '|' }).Skip(2).FirstOrDefault();
-                        if ("true".Equals(auto))
-                            return true;
-                    }
-                }
-                return false;
+                if (key == null) 
+                    return new Guid[0];
+                
+                var value = key.GetValue(KeyValue) as string;
+                if (value == null) 
+                    return new Guid[0];
+                
+                var engines = value.Split(new[] {'|'}).Skip(1).FirstOrDefault();
+                return !string.IsNullOrEmpty(engines) ? engines.Split(new[] {','}).Select(Guid.Parse) : new Guid[0];
             }
         }
 
@@ -166,26 +138,22 @@ namespace Resurrect
 
         public void Persist()
         {
-            if (_sessionProcesses.Any() && _sessionEngines.Any())
+            if (!_sessionProcesses.Any() || !_sessionEngines.Any()) return;
+            
+            using (var key = _storeTarget.OpenSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree) ??
+                             _storeTarget.CreateSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
             {
-                using (var key = _storeTarget.OpenSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree) ??
-                                 _storeTarget.CreateSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
-                {
-                    if (key == null)
-                        throw new Exception("Resurrect could not store processes for further usage: registry problem.");
+                if (key == null)
+                    throw new Exception("Resurrect could not store processes for further usage: registry problem.");
 
-                    var value = string.Format("{0}|{1}|{2}", 
-                        string.Join(",", _sessionProcesses),
-                        string.Join(",", _sessionEngines), 
-                        Auto.ToString().ToLowerInvariant());
-                    key.SetValue(KeyValue, value);
+                var value = string.Format("{0}|{1}", string.Join(",", _sessionProcesses), string.Join(",", _sessionEngines));
+                key.SetValue(KeyValue, value);
 
-                    HistoricProcesses = _sessionProcesses.ToList();
-                    HistoricEngines = _sessionEngines.ToList();
+                HistoricProcesses = _sessionProcesses.ToList();
+                HistoricEngines = _sessionEngines.ToList();
 
-                    _sessionProcesses.Clear();
-                    _sessionEngines.Clear();
-                }
+                _sessionProcesses.Clear();
+                _sessionEngines.Clear();
             }
         }
     }

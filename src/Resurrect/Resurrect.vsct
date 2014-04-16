@@ -75,7 +75,7 @@
       <Button guid="guidResurrectCmdSet" id="cmdidAutoAttach" type="Button">
         <CommandFlag>DontCache</CommandFlag>
         <Strings>          
-          <ButtonText>Automatic resurrection on process startup (On/Off)</ButtonText>
+          <ButtonText>Automatic resurrection on process startup (on/off, valid for current VS session only)</ButtonText>
         </Strings>
       </Button>
     </Buttons>

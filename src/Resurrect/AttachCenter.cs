@@ -4,14 +4,12 @@ using System.ComponentModel.Design;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Management;
 using EnvDTE80;
 using EnvDTE90;
 using Microsoft.Internal.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
-using Task = System.Threading.Tasks.Task;
 
 namespace Resurrect
 {
@@ -19,9 +17,11 @@ namespace Resurrect
     {        
         private readonly IServiceProvider _provider;
         private readonly Debugger3 _dteDebugger;
-        private readonly OleMenuCommand[] _commands;
         private ManagementEventWatcher _watcher;
-        private bool _freezed;        
+        private bool _freezed;
+
+        private OleMenuCommand _attachToProcessCommand;
+        private OleMenuCommand _toggleAutoAttachCommand;
 
         private static AttachCenter _instance;
         private static readonly object _locker = new object();        
@@ -30,7 +30,6 @@ namespace Resurrect
         {
             _provider = provider;
             _dteDebugger = dteDebugger;
-            _commands = new OleMenuCommand[2];
             _freezed = false;
         }
 
@@ -41,86 +40,65 @@ namespace Resurrect
                 if (_instance != null)
                     throw new ArgumentException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
                 _instance = new AttachCenter(provider, dteDebugger);
-                _instance.BindCommand(enabled: false);
+                _instance.BindCommands();
                 _instance.SendPatrol();
             }
         }
 
         public static AttachCenter Instance
         {
-            get
-            {
-                return _instance;
-            }
+            get { return _instance; }
         }
 
         public void Freeze()
         {
             _freezed = true;
-            _commands[0].Enabled = false;
+            Refresh();
         }
 
         public void Unfreeze()
         {
             _freezed = false;
-            _commands[0].Enabled = true;            
+            Refresh();
         }
 
-        private void BindCommand(bool enabled)
+        private void BindCommands()
         {
             // Add our command handlers for menu (commands must exist in the .vsct file).
-            var mcs = _provider.GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
-            if (null != mcs)
-            {
-                // Create the command for the menu item.
-                var commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidResurrect);
-                _commands[0] = new OleMenuCommand(AttachToProcesses, commandId) { Enabled = enabled };                
-                mcs.AddCommand(_commands[0]);
+            var mcs = _provider.GetService(typeof (IMenuCommandService)) as OleMenuCommandService;
+            if (null == mcs)
+                return;
 
-                commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidAutoAttach);
-                _commands[1] = new OleMenuCommand(ToggleAutoAttachSetting, commandId) { Checked = Storage.Instance.Auto };                
-                mcs.AddCommand(_commands[1]);
-            }            
+            var commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidResurrect);
+            _attachToProcessCommand = new OleMenuCommand(AttachToProcesses, commandId) { Enabled = false };
+            mcs.AddCommand(_attachToProcessCommand);
+
+            commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidAutoAttach);
+            _toggleAutoAttachCommand = new OleMenuCommand(ToggleAutoAttachSetting, commandId) { Checked = false };
+            mcs.AddCommand(_toggleAutoAttachCommand);
         }
 
         private void SendPatrol()
         {
+            Refresh();
             Storage.Instance.SolutionActivated += (sender, args) => Refresh();
             Storage.Instance.SolutionDeactivated += (sender, args) => Refresh();
 
-            // Run background checking.
-            Task.Factory.StartNew(SendVisualPatrol);            
-            Task.Factory.StartNew(SendSystemPatrol);
-        }
-
-        private void SendVisualPatrol()
-        {
-            const int delay = 500;
-            while (true)    // Patrol for safety reasons and in case of multiple VS instances running, which can change debug history.
-            {
-                Refresh();
-                Thread.Sleep(delay);
-            }
+            _watcher = new ManagementEventWatcher("SELECT ProcessName FROM Win32_ProcessStartTrace");
+            _watcher.EventArrived += ProcessStarted;
         }
 
         private void Refresh()
         {
-            _commands[0].Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
-            _commands[0].Text = string.Format("Resurrect {0}", Storage.Instance.HistoricProcesses.Any()
+            _attachToProcessCommand.Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
+            _attachToProcessCommand.Text = string.Format("Resurrect {0}", Storage.Instance.HistoricProcesses.Any()
                 ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
                 : "(no targets yet)");
         }
 
-        private void SendSystemPatrol()
-        {
-            _watcher = new ManagementEventWatcher("SELECT ProcessName FROM Win32_ProcessStartTrace");
-            _watcher.EventArrived += ProcessStarted;
-            _watcher.Start();
-        }
-
         void ProcessStarted(object sender, EventArrivedEventArgs e)
         {
-            if (!Storage.Instance.Auto) return;
+            if (!_toggleAutoAttachCommand.Checked) return;
             if (_freezed) return;
             if (!Storage.Instance.HistoricProcesses.Any()) return;
 
@@ -175,22 +153,46 @@ namespace Resurrect
                 }
             }
 
-            PerformAttachOperation(processes, engines, transport);
+            PerformAttachOperation(processes, engines);
         }
 
         private void ToggleAutoAttachSetting(object sender, EventArgs e)
-        {
-            Storage.Instance.Auto = !Storage.Instance.Auto;
-            _commands[1].Checked = Storage.Instance.Auto;
+        {            
+            try
+            {
+                if (_toggleAutoAttachCommand.Checked)
+                    _watcher.Stop();
+                else
+                    _watcher.Start();
+
+                _toggleAutoAttachCommand.Checked = !_toggleAutoAttachCommand.Checked;
+            }
+            catch (ManagementException ex)
+            {
+                if("access denied".Equals(ex.Message.Trim(), StringComparison.OrdinalIgnoreCase))
+                    ThrowElevationRequired();
+                else
+                    ShowMessage(string.Format("Unexpected problem: {0}. Request rejected.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(string.Format("Unexpected problem: {0}. Request rejected.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+            }
         }
 
-        private void PerformAttachOperation(IList<Process3> processes, IList<Engine> engines, Transport transport)
+        private void PerformAttachOperation(IList<Process3> processes, IList<Engine> engines)
         {
             try
             {
                 foreach (var process in processes)
                 {
-                    process.Attach2(engines.Any() ? engines.ToArray() : new[] {transport.Engines.Item("Managed/Native")});
+                    if (!process.IsBeingDebugged)
+                    {
+                        if (engines.Any())
+                            process.Attach2(engines.ToArray());
+                        else
+                            process.Attach();
+                    }
                 }
             }
             catch (COMException ex)
