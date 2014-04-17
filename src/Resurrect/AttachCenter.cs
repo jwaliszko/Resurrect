@@ -84,20 +84,24 @@ namespace Resurrect
             Storage.Instance.SolutionActivated += (sender, args) => Refresh();
             Storage.Instance.SolutionDeactivated += (sender, args) => Refresh();
 
-            _watcher = new ManagementEventWatcher("SELECT ProcessName FROM Win32_ProcessStartTrace");
+            _watcher = new ManagementEventWatcher("SELECT ProcessID FROM Win32_ProcessStartTrace");
             _watcher.EventArrived += ProcessStarted;
         }
 
         private void Refresh()
         {
             _attachToProcessCommand.Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
-            _attachToProcessCommand.Text = string.Format("Resurrect: {0}{1}",
-                Storage.Instance.HistoricProcesses.Any()
-                    ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
-                    : "(no targets yet)",
-                Storage.Instance.HistoricEngines.Any()
-                    ? string.Format(" // {0}", string.Join(",", GetEnginesNames(Storage.Instance.HistoricEngines)))
-                    : string.Empty);
+
+            var processes = Storage.Instance.HistoricProcesses.Any()
+                ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
+                : "(no targets yet)";
+            const int length = 50;
+            processes = processes.Length > length ? string.Format("{0}…", processes.Substring(0, length)) : processes;
+            var engines = Storage.Instance.HistoricEngines.Any()
+                ? string.Format(" // {0}", string.Join(", ", GetEnginesNames(Storage.Instance.HistoricEngines)))
+                : string.Empty;
+
+            _attachToProcessCommand.Text = string.Format("Resurrect: {0}{1}", processes, engines);
         }
 
         private IEnumerable<string> GetEnginesNames(IEnumerable<Guid> ids)
@@ -124,29 +128,48 @@ namespace Resurrect
 
         void ProcessStarted(object sender, EventArrivedEventArgs e)
         {
-            if (!_toggleAutoAttachCommand.Checked) return;
-            if (_freezed) return;
-            if (!Storage.Instance.HistoricProcesses.Any()) return;
+            var processId = e.NewEvent.Properties["ProcessID"].Value.ToString();
+            var processName = GetMainModuleFilePath(int.Parse(processId));
 
-            var processName = e.NewEvent.Properties["ProcessName"].Value.ToString();
-            if (Storage.Instance.HistoricProcesses.Select(Path.GetFileName).Contains(processName))
-                AttachToProcesses(this, null);
+            if (Storage.Instance.HistoricProcesses.Contains(processName))
+                AttachToProcessSilently(processName);
+        }
+
+        // Allows to avoid "A 32 bit processes cannot access modules of a 64 bit process" thrown when accessing MainModule of System.Diagnostics.Process...
+        private string GetMainModuleFilePath(int processId)
+        {
+            var wmiQueryString = string.Format("SELECT ExecutablePath FROM Win32_Process WHERE ProcessId = {0}", processId);
+            using (var searcher = new ManagementObjectSearcher(wmiQueryString))
+            {
+                using (var results = searcher.Get())
+                {
+                    var mo = results.Cast<ManagementObject>().FirstOrDefault();
+                    if (mo != null)
+                        return (string)mo["ExecutablePath"];
+                }
+            }
+            return null;
+        }
+
+        private void AttachToProcessSilently(string processName)
+        {
+            var runningProcess = _dteDebugger.LocalProcesses.Cast<Process3>().FirstOrDefault(x => x.Name.Equals(processName));
+            if (runningProcess != null)
+            {
+                var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
+                PerformAttachOperation(new[] { runningProcess }, engines);
+            }
         }
 
         private void AttachToProcesses(object sender, EventArgs e)
-        {            
-            if (_freezed) return;
-            if (!Storage.Instance.HistoricProcesses.Any()) return;
-
+        {
             var runningProcesses = _dteDebugger.LocalProcesses.Cast<Process3>()
-                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name)))
-                .ToList();
+                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name))).ToList();
             if (!runningProcesses.Any())
             {
                 ShowMessage("No historic processes found alive. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
                 return;
             }
-
             var missingProcesses = Storage.Instance.HistoricProcesses.Except(runningProcesses.Select(x => x.Name)).ToList();
             if (missingProcesses.Any())
             {
@@ -158,10 +181,9 @@ namespace Resurrect
                     return;
                 }
             }
-
             var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
-
-            PerformAttachOperation(runningProcesses, engines);
+                        
+            PerformAttachOperation(runningProcesses, engines);                
         }
 
         private void ToggleAutoAttachSetting(object sender, EventArgs e)
@@ -190,24 +212,25 @@ namespace Resurrect
 
         private void PerformAttachOperation(IEnumerable<Process3> processes, IEnumerable<string> engines)
         {
-            try
+            lock (_locker)
             {
-                var array = engines.ToArray();
-                foreach (var process in processes)
+                try
                 {
-                    if (!process.IsBeingDebugged)
+                    var array = engines.ToArray();
+                    foreach (var process in processes)
                     {
-                        process.Attach2(array.Any() ? array : null);    // if no specific engines, null indicates to detect one
+                        if (!process.IsBeingDebugged)
+                            process.Attach2(array.Any() ? array : null); // if no specific engines, null indicates to detect one
                     }
                 }
-            }
-            catch (COMException ex)
-            {
-                ThrowElevationRequired();
-            }
-            catch (Exception ex)
-            {
-                ShowMessage(string.Format("Unexpected problem: {0}.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+                catch (COMException ex)
+                {
+                    ThrowElevationRequired();
+                }
+                catch (Exception ex)
+                {
+                    ShowMessage(string.Format("Unexpected problem: {0}.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+                }
             }
         }
 
