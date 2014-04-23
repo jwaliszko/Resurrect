@@ -13,11 +13,11 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Resurrect
 {
-    public class AttachCenter
+    internal class AttachCenter
     {
         private readonly IServiceProvider _provider;
         private readonly Debugger3 _dteDebugger;
-        private ManagementEventWatcher _watcher;
+        private readonly ManagementEventWatcher _watcher;
         private bool _freezed;
 
         private OleMenuCommand _attachToProcessCommand;
@@ -29,8 +29,11 @@ namespace Resurrect
         private AttachCenter(IServiceProvider provider, Debugger3 dteDebugger)
         {
             _provider = provider;
-            _dteDebugger = dteDebugger;
-            _freezed = false;
+            _dteDebugger = dteDebugger;            
+            _watcher = new ManagementEventWatcher("SELECT ProcessID FROM Win32_ProcessStartTrace");
+
+            BindCommands();
+            SendPatrol();            
         }
 
         public static void Instantiate(IServiceProvider provider, Debugger3 dteDebugger)
@@ -38,10 +41,8 @@ namespace Resurrect
             lock (_locker)
             {
                 if (_instance != null)
-                    throw new ArgumentException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
+                    throw new InvalidOperationException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
                 _instance = new AttachCenter(provider, dteDebugger);
-                _instance.BindCommands();
-                _instance.SendPatrol();
             }
         }
 
@@ -50,18 +51,6 @@ namespace Resurrect
             get { return _instance; }
         }
 
-        public void Freeze()
-        {
-            _freezed = true;
-            Refresh();
-        }
-
-        public void Unfreeze()
-        {
-            _freezed = false;
-            Refresh();
-        }        
-
         private void BindCommands()
         {
             // Add our command handlers for menu (commands must exist in the .vsct file).
@@ -69,11 +58,11 @@ namespace Resurrect
             if (null == mcs)
                 return;
 
-            var commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidResurrect);
+            var commandId = new CommandID(Constants.GuidResurrectCmdSet, Constants.CmdidResurrect);
             _attachToProcessCommand = new OleMenuCommand(AttachToProcesses, commandId) { Enabled = false };
             mcs.AddCommand(_attachToProcessCommand);
 
-            commandId = new CommandID(GuidList.guidResurrectCmdSet, PkgCmdIDList.cmdidAutoAttach);
+            commandId = new CommandID(Constants.GuidResurrectCmdSet, Constants.CmdidAutoAttach);
             _toggleAutoAttachCommand = new OleMenuCommand(ToggleAutoAttachSetting, commandId) { Checked = false };
             mcs.AddCommand(_toggleAutoAttachCommand);
         }
@@ -82,11 +71,22 @@ namespace Resurrect
         {
             Refresh();
             Storage.Instance.SolutionActivated += (sender, args) => Refresh();
-            Storage.Instance.SolutionDeactivated += (sender, args) => Refresh();
-
-            _watcher = new ManagementEventWatcher("SELECT ProcessID FROM Win32_ProcessStartTrace");
+            Storage.Instance.SolutionDeactivated += (sender, args) => Refresh();            
             _watcher.EventArrived += ProcessStarted;
         }
+
+        public void Freeze()
+        {
+            // Freeze only if all historic processes are attached.
+            _freezed = !Storage.Instance.HistoricProcesses.Except(Storage.Instance.SessionProcesses).Any();
+            Refresh();
+        }
+
+        public void Unfreeze()
+        {
+            _freezed = false;
+            Refresh();
+        }    
 
         private void Refresh()
         {
@@ -138,27 +138,24 @@ namespace Resurrect
         // Allows to avoid "A 32 bit processes cannot access modules of a 64 bit process" thrown when accessing MainModule of System.Diagnostics.Process...
         private string GetMainModuleFilePath(int processId)
         {
-            var wmiQueryString = string.Format("SELECT ExecutablePath FROM Win32_Process WHERE ProcessId = {0}", processId);
+            var wmiQueryString = string.Format("SELECT ExecutablePath FROM Win32_Process WHERE ProcessID = {0}", processId);
             using (var searcher = new ManagementObjectSearcher(wmiQueryString))
             {
                 using (var results = searcher.Get())
                 {
                     var mo = results.Cast<ManagementObject>().FirstOrDefault();
-                    if (mo != null)
-                        return (string)mo["ExecutablePath"];
+                    return mo != null ? (string) mo["ExecutablePath"] : null;
                 }
             }
-            return null;
         }
 
         private void AttachToProcessSilently(string processName)
         {
             var runningProcess = _dteDebugger.LocalProcesses.Cast<Process3>().FirstOrDefault(x => x.Name.Equals(processName));
-            if (runningProcess != null)
-            {
-                var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
-                PerformAttachOperation(new[] { runningProcess }, engines);
-            }
+            if (runningProcess == null) return;
+
+            var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
+            PerformAttachOperation(new[] { runningProcess }, engines);
         }
 
         private void AttachToProcesses(object sender, EventArgs e)
@@ -167,7 +164,7 @@ namespace Resurrect
                 .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name))).ToList();
             if (!runningProcesses.Any())
             {
-                ShowMessage("No historic processes found alive. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
+                ShowMessage("No historic processes found. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
                 return;
             }
             var missingProcesses = Storage.Instance.HistoricProcesses.Except(runningProcesses.Select(x => x.Name)).ToList();
@@ -175,7 +172,7 @@ namespace Resurrect
             {
                 if (DialogResult.Yes !=
                     AskQuestion(string.Format(
-                        "Some of the historic processes not alive:\n{0}\n\nContinue to resurrect the debugging session without them?",
+                        "Some of the historic processes not found:\n{0}\n\nContinue to resurrect the debugging session without them?",
                         string.Join(",\n", missingProcesses.Select(proc => string.Format("    {0}", Path.GetFileName(proc)))))))
                 {
                     return;
@@ -199,14 +196,19 @@ namespace Resurrect
             }
             catch (ManagementException ex)
             {
-                if("access denied".Equals(ex.Message.Trim(), StringComparison.OrdinalIgnoreCase))
-                    ThrowElevationRequired();
-                else
-                    ShowMessage(string.Format("Unexpected problem: {0}. Request rejected.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+                switch (ex.ErrorCode)
+                {
+                    case ManagementStatus.AccessDenied:
+                        ThrowElevationRequired();
+                        break;
+                    default:
+                        ShowMessage(ex.Message, OLEMSGICON.OLEMSGICON_CRITICAL);
+                        break;
+                }
             }
             catch (Exception ex)
             {
-                ShowMessage(string.Format("Unexpected problem: {0}. Request rejected.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+                ShowMessage(ex.Message, OLEMSGICON.OLEMSGICON_CRITICAL);
             }
         }
 
@@ -214,22 +216,29 @@ namespace Resurrect
         {
             lock (_locker)
             {
-                try
+                var array = engines.ToArray();
+                foreach (var process in processes)
                 {
-                    var array = engines.ToArray();
-                    foreach (var process in processes)
+                    try
                     {
                         if (!process.IsBeingDebugged)
-                            process.Attach2(array.Any() ? array : null); // if no specific engines, null indicates to detect one
+                            process.Attach2(array.Any() ? array : null); // If no specific engines provided, detect appropriate one.
                     }
-                }
-                catch (COMException ex)
-                {
-                    ThrowElevationRequired();
-                }
-                catch (Exception ex)
-                {
-                    ShowMessage(string.Format("Unexpected problem: {0}.", ex.Message), OLEMSGICON.OLEMSGICON_CRITICAL);
+                    catch (COMException ex)
+                    {
+                        // HRESULTs are COM's weakness, error codes don't scale well so we get a diagnostic for what couldn't be done, not for why it couldn't be done.
+                        // We can try to detect the simplest (not authorized) source of the failure on our own...
+                        if (!SecurityGuard.HasAdminRights) 
+                            ThrowElevationRequired();
+                        else                            
+                            ShowMessage(string.Format(
+                                "Unable to attach to the process {0}. A debugger can be already attached. If not, unexpected problem has just occured.",
+                                Path.GetFileName(process.Name)), OLEMSGICON.OLEMSGICON_CRITICAL);
+                    }
+                    catch (Exception ex)
+                    {
+                        ShowMessage(ex.Message, OLEMSGICON.OLEMSGICON_CRITICAL);
+                    }
                 }
             }
         }

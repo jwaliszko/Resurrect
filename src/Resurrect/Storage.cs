@@ -8,7 +8,7 @@ using Microsoft.Win32;
 
 namespace Resurrect
 {
-    public class Storage
+    internal class Storage
     {
         private const string KeyName = "Resurrect";
         private string KeyValue
@@ -16,54 +16,28 @@ namespace Resurrect
             get { return Path.GetFileName(_application.Solution.FullName); }
         }
 
-        private IList<string> _sessionProcesses = new List<string>();
-        private IList<Guid> _sessionEngines = new List<Guid>();
         private readonly SolutionEvents _solutionEvents;
         private readonly RegistryKey _storeTarget;
         private readonly DTE2 _application;
+        private List<string> _historicProcesses;
+        private List<Guid> _historicEngines;
+        private List<string> _sessionProcesses;
+        private List<Guid> _sessionEngines;
         private static Storage _instance;        
         private static readonly object _locker = new object();
 
-        public EventHandler<EventArgs> SolutionActivated;
-        public EventHandler<EventArgs> SolutionDeactivated;
+        public event EventHandler<EventArgs> SolutionActivated;
+        public event EventHandler<EventArgs> SolutionDeactivated;
 
         private Storage(RegistryKey storeTarget, DTE2 application)
         {
             _storeTarget = storeTarget;
             _application = application;
-
-            HistoricProcesses = new string[0];
-            HistoricEngines = new Guid[0];
-
             _solutionEvents = application.Events.SolutionEvents;
-            _solutionEvents.Opened += SolutionOpened;
-            _solutionEvents.AfterClosing += SolutionClosed; 
-        }
-
-        void SolutionOpened()
-        {
-            HistoricProcesses = GetProcesses();
-            HistoricEngines = GetEngines();
-            OnSolutionOpened();
-        }        
-
-        void SolutionClosed()
-        {
-            HistoricProcesses = new string[0];
-            HistoricEngines = new Guid[0];
-            OnSolutionClosed();
-        }
-
-        private void OnSolutionOpened()
-        {
-            if (SolutionActivated != null)
-                SolutionActivated(this, null);
-        }
-
-        private void OnSolutionClosed()
-        {
-            if (SolutionDeactivated != null)
-                SolutionDeactivated(this, null);
+            _historicProcesses = _sessionProcesses = new List<string>();
+            _historicEngines = _sessionEngines = new List<Guid>();
+            
+            SendPatrol();
         }
 
         public static void Instantiate(RegistryKey storeTarget, DTE2 application)
@@ -71,8 +45,8 @@ namespace Resurrect
             lock (_locker)
             {
                 if (_instance != null)
-                    throw new ArgumentException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
-                _instance = new Storage(storeTarget, application);                               
+                    throw new InvalidOperationException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
+                _instance = new Storage(storeTarget, application);
             }
         }
 
@@ -81,8 +55,57 @@ namespace Resurrect
             get { return _instance; }
         }
 
-        public IEnumerable<string> HistoricProcesses { get; private set; }
-        public IEnumerable<Guid> HistoricEngines { get; private set; }
+        public IEnumerable<string> HistoricProcesses
+        {
+            get { return _historicProcesses; }
+        }
+
+        public IEnumerable<Guid> HistoricEngines
+        {
+            get { return _historicEngines; }
+        }
+
+        public IEnumerable<string> SessionProcesses
+        {
+            get { return _sessionProcesses; }
+        }
+
+        public IEnumerable<Guid> SessionEngines
+        {
+            get { return _sessionEngines; }
+        }
+
+        private void SendPatrol()
+        {
+            _solutionEvents.Opened += SolutionOpened;
+            _solutionEvents.AfterClosing += SolutionClosed;
+        }
+
+        void SolutionOpened()
+        {
+            _historicProcesses = GetProcesses().ToList();
+            _historicEngines = GetEngines().ToList();
+            OnSolutionActivated();
+        }        
+
+        void SolutionClosed()
+        {
+            _historicProcesses.Clear();
+            _historicEngines.Clear();
+            OnSolutionDeactivated();
+        }
+
+        private void OnSolutionActivated()
+        {
+            if (SolutionActivated != null)
+                SolutionActivated(this, null);  // Rise an event.
+        }
+
+        private void OnSolutionDeactivated()
+        {
+            if (SolutionDeactivated != null)
+                SolutionDeactivated(this, null);
+        }
 
         private IEnumerable<string> GetProcesses()
         {
@@ -118,7 +141,7 @@ namespace Resurrect
 
         private void Sanitize()
         {
-            _sessionProcesses = _sessionProcesses.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+            _sessionProcesses = _sessionProcesses.Distinct().ToList();
             _sessionEngines = _sessionEngines.Distinct().ToList();
         }
 
@@ -142,13 +165,13 @@ namespace Resurrect
                              _storeTarget.CreateSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
             {
                 if (key == null)
-                    throw new Exception("Resurrect could not store processes for further usage: registry problem.");
+                    throw new InvalidOperationException("Resurrect could not store processes for further usage - registry problem.");
 
                 var value = string.Format("{0}|{1}", string.Join(",", _sessionProcesses), string.Join(",", _sessionEngines));
                 key.SetValue(KeyValue, value);
 
-                HistoricProcesses = _sessionProcesses.ToList();
-                HistoricEngines = _sessionEngines.ToList();
+                _historicProcesses = _sessionProcesses.ToList();
+                _historicEngines = _sessionEngines.ToList();
 
                 _sessionProcesses.Clear();
                 _sessionEngines.Clear();

@@ -25,7 +25,7 @@ namespace Resurrect
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     // This attribute is needed to let the shell know that this package exposes some menus.
     [ProvideMenuResource("Menus.ctmenu", 1)]
-    [Guid(GuidList.guidResurrectPkgString)]
+    [Guid(Constants.GuidResurrectPkgString)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string)]
     public sealed class ResurrectPackage : Package
     {

@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Resurrect
 {
-    public class DebugEventsHunter : IVsDebuggerEvents, IDebugEventCallback2
+    internal class DebugEventsHunter : IVsDebuggerEvents, IDebugEventCallback2
     {
         private readonly IVsDebugger _debugger;
         private uint _cookie;
@@ -25,10 +25,7 @@ namespace Resurrect
         {
             switch (mode)
             {
-                case DBGMODE.DBGMODE_Run:
-                    AttachCenter.Instance.Freeze();
-                    break;
-                case DBGMODE.DBGMODE_Design:                
+                case DBGMODE.DBGMODE_Design:
                     Storage.Instance.Persist();
                     AttachCenter.Instance.Unfreeze();
                     break;
@@ -46,8 +43,11 @@ namespace Resurrect
                 {
                     if (!processName.EndsWith("vshost.exe"))
                     {
-                        if (debugEvent is IDebugProcessDestroyEvent2)
-                            Storage.Instance.SubscribeProcess(processName);
+                        if (debugEvent is IDebugProcessCreateEvent2)
+                        {
+                            Storage.Instance.SubscribeProcess(processName); 
+                            AttachCenter.Instance.Freeze();
+                        }
                         if (debugEvent is IDebugLoadCompleteEvent2)
                         {
                             if (program != null)
