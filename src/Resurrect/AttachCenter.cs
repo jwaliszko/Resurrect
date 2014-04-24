@@ -98,7 +98,7 @@ namespace Resurrect
             const int length = 50;
             processes = processes.Length > length ? string.Format("{0}…", processes.Substring(0, length)) : processes;
             var engines = Storage.Instance.HistoricEngines.Any()
-                ? string.Format(" // {0}", string.Join(", ", GetEnginesNames(Storage.Instance.HistoricEngines)))
+                ? string.Format(" / {0}", string.Join(", ", GetEnginesNames(Storage.Instance.HistoricEngines)))
                 : string.Empty;
 
             _attachToProcessCommand.Text = string.Format("Resurrect: {0}{1}", processes, engines);
