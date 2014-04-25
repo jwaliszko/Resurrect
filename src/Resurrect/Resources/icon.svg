@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="icon.svg"
+   inkscape:export-filename="D:\Projects\Internal\github\Resurrect\src\Resurrect\Resources\icon32.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient4629">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop4631" />
+      <stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="stop4633" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient3839"
+       osb:paint="gradient">
+      <stop
+         id="stop3861"
+         offset="0"
+         style="stop-color:#009f00;stop-opacity:1;" />
+      <stop
+         id="stop3859"
+         offset="1"
+         style="stop-color:#abfa00;stop-opacity:1;" />
+    </linearGradient>
+    <radialGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,0.75333284,2,134.50909)"
+       r="192.81654"
+       fy="504.76556"
+       fx="289.61858"
+       cy="504.76556"
+       cx="289.61858"
+       id="radialGradient6904"
+       xlink:href="#linearGradient6898"
+       inkscape:collect="always" />
+    <marker
+       style="overflow:visible"
+       id="Arrow2Lstart"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow2Lstart">
+      <path
+         transform="scale(1.1) translate(1,0)"
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round"
+         id="path3805" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="TriangleInL"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="TriangleInL">
+      <path
+         transform="scale(-0.8)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         id="path3920" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="TriangleInM"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="TriangleInM">
+      <path
+         transform="scale(-0.4)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         id="path3923" />
+    </marker>
+    <linearGradient
+       id="linearGradient6898"
+       inkscape:collect="always">
+      <stop
+         id="stop6900"
+         offset="0"
+         style="stop-color:#000000;stop-opacity:1;" />
+      <stop
+         id="stop6902"
+         offset="1"
+         style="stop-color:#000000;stop-opacity:0;" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3839"
+       id="linearGradient3867"
+       x1="302.16766"
+       y1="392.77542"
+       x2="499.13837"
+       y2="392.77542"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,-2)" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6898"
+       id="radialGradient3875"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,0.75333284,2,134.50909)"
+       cx="289.61858"
+       cy="504.76556"
+       fx="289.61858"
+       fy="504.76556"
+       r="192.81654" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3839"
+       id="linearGradient3877"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,-2)"
+       x1="302.16766"
+       y1="392.77542"
+       x2="499.13837"
+       y2="392.77542" />
+    <radialGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6898"
+       id="radialGradient3889"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,0.75333284,2,134.50909)"
+       cx="289.61858"
+       cy="504.76556"
+       fx="289.61858"
+       fy="504.76556"
+       r="192.81654" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3839"
+       id="linearGradient3891"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,-2)"
+       x1="302.16766"
+       y1="392.77542"
+       x2="499.13837"
+       y2="392.77542" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3839"
+       id="linearGradient3894"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.77034922,0,0,0.76940688,316.10355,-168.25712)"
+       x1="302.16766"
+       y1="392.77542"
+       x2="499.13837"
+       y2="392.77542" />
+    <filter
+       height="1.1641084"
+       y="-0.082054181"
+       width="1.2193637"
+       x="-0.10968185"
+       id="filter6916"
+       inkscape:collect="always">
+      <feGaussianBlur
+         id="feGaussianBlur6918"
+         stdDeviation="8.996001"
+         inkscape:collect="always" />
+    </filter>
+    <radialGradient
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1,0,0,0.75333284,0,124.50909)"
+       r="192.81654"
+       fy="504.76556"
+       fx="289.61858"
+       cy="504.76556"
+       cx="289.61858"
+       id="radialGradient6904-8"
+       xlink:href="#linearGradient6898-4"
+       inkscape:collect="always" />
+    <filter
+       id="filter5450"
+       inkscape:collect="always">
+      <feGaussianBlur
+         id="feGaussianBlur5452"
+         stdDeviation="7.4848311"
+         inkscape:collect="always" />
+    </filter>
+    <marker
+       style="overflow:visible"
+       id="Arrow2Lstart-9"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="Arrow2Lstart">
+      <path
+         transform="scale(1.1) translate(1,0)"
+         d="M 8.7185878,4.0337352 L -2.2072895,0.016013256 L 8.7185884,-4.0017078 C 6.9730900,-1.6296469 6.9831476,1.6157441 8.7185878,4.0337352 z "
+         style="fill-rule:evenodd;stroke-width:0.62500000;stroke-linejoin:round"
+         id="path3805-3" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="TriangleInL-1"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="TriangleInL">
+      <path
+         transform="scale(-0.8)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         id="path3920-2" />
+    </marker>
+    <marker
+       style="overflow:visible"
+       id="TriangleInM-6"
+       refX="0.0"
+       refY="0.0"
+       orient="auto"
+       inkscape:stockid="TriangleInM">
+      <path
+         transform="scale(-0.4)"
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         id="path3923-0" />
+    </marker>
+    <linearGradient
+       id="linearGradient6898-4"
+       inkscape:collect="always">
+      <stop
+         id="stop6900-0"
+         offset="0"
+         style="stop-color:#000000;stop-opacity:1;" />
+      <stop
+         id="stop6902-7"
+         offset="1"
+         style="stop-color:#000000;stop-opacity:0;" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4629"
+       id="linearGradient4639"
+       x1="406.05591"
+       y1="229.34586"
+       x2="675.44745"
+       y2="229.34586"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3839"
+       id="linearGradient4653"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.77034922,0,0,0.76940688,316.10355,-168.25712)"
+       x1="302.16766"
+       y1="392.77542"
+       x2="499.13837"
+       y2="392.77542" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4629"
+       id="linearGradient4659"
+       gradientUnits="userSpaceOnUse"
+       x1="406.05591"
+       y1="229.34586"
+       x2="675.44745"
+       y2="229.34586" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4629"
+       id="linearGradient4661"
+       gradientUnits="userSpaceOnUse"
+       x1="406.05591"
+       y1="229.34586"
+       x2="675.44745"
+       y2="229.34586" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1"
+     inkscape:cx="356.58311"
+     inkscape:cy="511.31296"
+     inkscape:document-units="px"
+     inkscape:current-layer="g6920"
+     showgrid="false"
+     inkscape:window-width="1920"
+     inkscape:window-height="1138"
+     inkscape:window-x="1912"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="layer1-9"
+       inkscape:label="Layer 1"
+       transform="translate(-182.82959,347.74223)">
+      <g
+         id="g6920">
+        <g
+           id="g3905"
+           inkscape:export-filename="D:\Projects\Internal\github\Resurrect\src\Resurrect\Resources\icon16.png"
+           inkscape:export-xdpi="90"
+           inkscape:export-ydpi="90"
+           style="fill:url(#linearGradient4639);fill-opacity:1;stroke:#000000;stroke-width:2.9000001;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+           transform="matrix(1.0145012,0,0,1.0145012,-5.9160476,-4.7182945)">
+          <path
+             inkscape:connector-curvature="0"
+             id="path2996"
+             d="m 457.99225,134.76897 c -1.04986,-0.008 -2.09091,0.50717 -2.7203,1.34646 l -45.1858,60.03778 c -0.75452,0.99937 -0.88137,2.443 -0.31295,3.55851 0.56841,1.11551 1.8043,1.84841 3.05732,1.82734 9.18006,-0.13791 18.90409,-0.18331 28.57515,-0.19235 a 9.0047422,8.9937271 0 0 0 0,0.96175 c 4.03116,67.79371 60.48703,121.61438 129.32237,121.61438 39.77449,0 75.49231,-17.94791 99.25468,-46.18846 a 9.0047422,8.9937271 0 0 0 -2.11846,-13.39249 L 654.7924,256.1429 a 9.0047422,8.9937271 0 0 0 -11.55524,1.68308 c -17.66494,20.15321 -43.53964,32.8681 -72.50912,32.8681 -50.99615,0 -92.54866,-39.36706 -96.05292,-89.34737 13.11109,-0.0334 24.07075,-0.16783 29.99548,-0.64919 1.20488,-0.10137 2.33555,-0.91172 2.81658,-2.01969 0.48104,-1.10799 0.292,-2.46649 -0.45739,-3.41425 l -46.41354,-59.19624 c -0.61982,-0.7963 -1.61419,-1.28832 -2.624,-1.29837 z"
+             style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:url(#linearGradient4659);fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:2.9000001;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans" />
+          <path
+             inkscape:connector-curvature="0"
+             style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:url(#linearGradient4661);fill-opacity:1;fill-rule:nonzero;stroke:#000000;stroke-width:2.9000001;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans"
+             d="m 457.99225,134.76897 c -1.04986,-0.008 -2.09091,0.50717 -2.7203,1.34646 l -45.1858,60.03778 c -0.75452,0.99937 -0.88137,2.443 -0.31295,3.55851 0.56841,1.11551 1.8043,1.84841 3.05732,1.82734 9.18006,-0.13791 18.90409,-0.18331 28.57515,-0.19235 a 9.0047422,8.9937271 0 0 0 0,0.96175 c 4.03116,67.79371 60.48703,121.61438 129.32237,121.61438 39.77449,0 75.49231,-17.94791 99.25468,-46.18846 a 9.0047422,8.9937271 0 0 0 -2.11846,-13.39249 L 654.7924,256.1429 a 9.0047422,8.9937271 0 0 0 -11.55524,1.68308 c -17.66494,20.15321 -43.53964,32.8681 -72.50912,32.8681 -50.99615,0 -92.54866,-39.36706 -96.05292,-89.34737 13.11109,-0.0334 24.07075,-0.16783 29.99548,-0.64919 1.20488,-0.10137 2.33555,-0.91172 2.81658,-2.01969 0.48104,-1.10799 0.292,-2.46649 -0.45739,-3.41425 l -46.41354,-59.19624 c -0.61982,-0.7963 -1.61419,-1.28832 -2.624,-1.29837 z"
+             id="path5436" />
+        </g>
+        <g
+           id="g3901"
+           inkscape:export-filename="D:\Projects\Internal\github\Resurrect\src\Resurrect\Resources\icon16.png"
+           inkscape:export-xdpi="90"
+           inkscape:export-ydpi="90"
+           transform="matrix(0.95207155,0,0,1.0000545,33.862647,-0.01766868)">
+          <g
+             id="g4649"
+             transform="matrix(0.93332443,0,0,0.93332443,51.191609,-2.2999344)"
+             inkscape:export-filename="D:\Projects\Internal\github\Resurrect\src\Resurrect\Resources\icon16.png"
+             inkscape:export-xdpi="90"
+             inkscape:export-ydpi="90">
+            <path
+               style="fill:#00e500;fill-opacity:1;stroke:#007800;stroke-width:6.2629571;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
+               d="M 549.94745,32.722386 548.92632,235.17159 700.56626,135.22187 z"
+               id="path3766"
+               inkscape:connector-curvature="0" />
+            <path
+               inkscape:connector-curvature="0"
+               id="path6906"
+               d="M 549.94745,32.722386 548.92632,235.17159 700.56626,135.22187 z"
+               style="fill:url(#linearGradient4653);fill-opacity:1;stroke:#007800;stroke-width:0.07698779;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
+          </g>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

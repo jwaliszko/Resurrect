@@ -232,7 +232,7 @@ namespace Resurrect
                             ThrowElevationRequired();
                         else                            
                             ShowMessage(string.Format(
-                                "Unable to attach to the process {0}. A debugger can be already attached. If not, unexpected problem has just occured.",
+                                "Unable to attach to the process {0}. A debugger can be already attached (otherwise, unexpected problem has just occured).",
                                 Path.GetFileName(process.Name)), OLEMSGICON.OLEMSGICON_CRITICAL);
                     }
                     catch (Exception ex)
