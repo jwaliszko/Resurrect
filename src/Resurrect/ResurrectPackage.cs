@@ -62,12 +62,24 @@ namespace Resurrect
                     if (dteDebugger != null)
                     {
                         Storage.Instantiate(UserRegistryRoot, dte);
-                        AttachCenter.Instantiate(this, dteDebugger);                        
-                        var guard = new DebugEventsHunter(debugger);
-                        guard.Listen();
+                        Storage.Instance.SendPatrol();
+
+                        AttachCenter.Instantiate(this, dteDebugger);
+                        AttachCenter.Instance.SendPatrol();
+
+                        DebugEventsHunter.Instantiate(debugger);
+                        DebugEventsHunter.Instance.SendPatrol();
                     }
                 }
             }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            DebugEventsHunter.Instance.DismissPatrol();
+            AttachCenter.Instance.DismissPatrol();
+            Storage.Instance.DismissPatrol();
+            base.Dispose(disposing);
         }
         #endregion
     }

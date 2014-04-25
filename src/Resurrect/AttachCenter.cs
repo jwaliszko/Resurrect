@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Resurrect
 {
-    internal class AttachCenter
+    internal sealed class AttachCenter
     {
         private readonly IServiceProvider _provider;
         private readonly Debugger3 _dteDebugger;
@@ -24,16 +24,15 @@ namespace Resurrect
         private OleMenuCommand _toggleAutoAttachCommand;
 
         private static AttachCenter _instance;
-        private static readonly object _locker = new object();
+        private static readonly object _locker = new object();        
 
         private AttachCenter(IServiceProvider provider, Debugger3 dteDebugger)
         {
             _provider = provider;
-            _dteDebugger = dteDebugger;            
+            _dteDebugger = dteDebugger;
             _watcher = new ManagementEventWatcher("SELECT ProcessID FROM Win32_ProcessStartTrace");
 
             BindCommands();
-            SendPatrol();            
         }
 
         public static void Instantiate(IServiceProvider provider, Debugger3 dteDebugger)
@@ -67,12 +66,25 @@ namespace Resurrect
             mcs.AddCommand(_toggleAutoAttachCommand);
         }
 
-        private void SendPatrol()
+        public void SendPatrol()
         {
             Refresh();
-            Storage.Instance.SolutionActivated += (sender, args) => Refresh();
-            Storage.Instance.SolutionDeactivated += (sender, args) => Refresh();            
+            Storage.Instance.SolutionActivated += SolutionActivityChanged;
+            Storage.Instance.SolutionDeactivated += SolutionActivityChanged;
             _watcher.EventArrived += ProcessStarted;
+        }
+
+        public void DismissPatrol()
+        {
+            Storage.Instance.SolutionActivated -= SolutionActivityChanged;
+            Storage.Instance.SolutionDeactivated -= SolutionActivityChanged;
+            _watcher.EventArrived -= ProcessStarted;
+            _watcher.Stop();
+        }
+
+        void SolutionActivityChanged(object sender, EventArgs e)
+        {
+            Refresh();
         }
 
         public void Freeze()
@@ -180,7 +192,7 @@ namespace Resurrect
             }
             var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
                         
-            PerformAttachOperation(runningProcesses, engines);                
+            PerformAttachOperation(runningProcesses, engines);
         }
 
         private void ToggleAutoAttachSetting(object sender, EventArgs e)
@@ -232,7 +244,7 @@ namespace Resurrect
                             ThrowElevationRequired();
                         else                            
                             ShowMessage(string.Format(
-                                "Unable to attach to the process {0}. A debugger can be already attached (otherwise, unexpected problem has just occured).",
+                                "Unable to attach to the process {0}. A debugger can be already attached (otherwise, unexpected problem has just occurred).",
                                 Path.GetFileName(process.Name)), OLEMSGICON.OLEMSGICON_CRITICAL);
                     }
                     catch (Exception ex)
@@ -288,6 +300,6 @@ namespace Resurrect
                 0, // false
                 out pnResult);
             return pnResult;
-        }        
+        }
     }
 }

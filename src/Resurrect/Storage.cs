@@ -8,7 +8,7 @@ using Microsoft.Win32;
 
 namespace Resurrect
 {
-    internal class Storage
+    internal sealed class Storage
     {
         private const string KeyName = "Resurrect";
         private string KeyValue
@@ -36,8 +36,6 @@ namespace Resurrect
             _solutionEvents = application.Events.SolutionEvents;
             _historicProcesses = _sessionProcesses = new List<string>();
             _historicEngines = _sessionEngines = new List<Guid>();
-            
-            SendPatrol();
         }
 
         public static void Instantiate(RegistryKey storeTarget, DTE2 application)
@@ -75,10 +73,16 @@ namespace Resurrect
             get { return _sessionEngines; }
         }
 
-        private void SendPatrol()
+        public void SendPatrol()
         {
             _solutionEvents.Opened += SolutionOpened;
             _solutionEvents.AfterClosing += SolutionClosed;
+        }
+
+        public void DismissPatrol()
+        {
+            _solutionEvents.Opened -= SolutionOpened;
+            _solutionEvents.AfterClosing -= SolutionClosed;
         }
 
         void SolutionOpened()

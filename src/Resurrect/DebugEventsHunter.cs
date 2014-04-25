@@ -5,20 +5,44 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Resurrect
 {
-    internal class DebugEventsHunter : IVsDebuggerEvents, IDebugEventCallback2
+    internal sealed class DebugEventsHunter : IVsDebuggerEvents, IDebugEventCallback2
     {
         private readonly IVsDebugger _debugger;
         private uint _cookie;
+
+        private static DebugEventsHunter _instance;
+        private static readonly object _locker = new object();
 
         public DebugEventsHunter(IVsDebugger debugger)
         {
             _debugger = debugger;
         }
 
-        public void Listen()
+        public static void Instantiate(IVsDebugger debugger)
+        {
+            lock (_locker)
+            {
+                if (_instance != null)
+                    throw new InvalidOperationException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
+                _instance = new DebugEventsHunter(debugger);
+            }
+        }
+
+        public static DebugEventsHunter Instance
+        {
+            get { return _instance; }
+        }
+
+        public void SendPatrol()
         {
             _debugger.AdviseDebuggerEvents(this, out _cookie);
             _debugger.AdviseDebugEventCallback(this);
+        }
+
+        public void DismissPatrol()
+        {
+            _debugger.UnadviseDebuggerEvents(_cookie);
+            _debugger.UnadviseDebugEventCallback(this);
         }
 
         public int OnModeChange(DBGMODE mode)
