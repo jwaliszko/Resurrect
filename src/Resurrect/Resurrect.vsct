@@ -103,7 +103,7 @@
   </CommandPlacements>
 
   <KeyBindings>
-    <KeyBinding guid="guidResurrectCmdSet" id="cmdidResurrect" editor="guidVSStd97" mod1="Control" mod2="Control" key1="R" key2="H" />    
+    <KeyBinding guid="guidResurrectCmdSet" id="cmdidResurrect" editor="guidVSStd97" mod1="Control" mod2="Control" key1="R" key2="H" />
   </KeyBindings>
   
   <Symbols>

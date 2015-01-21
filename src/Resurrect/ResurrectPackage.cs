@@ -61,6 +61,8 @@ namespace Resurrect
                     var dteDebugger = dte.Debugger as Debugger3;
                     if (dteDebugger != null)
                     {
+                        Log.Instantiate(this);
+
                         Storage.Instantiate(UserRegistryRoot, dte);
                         Storage.Instance.SendPatrol();
 

@@ -92,6 +92,7 @@
     <Compile Include="AttachCenter.cs" />
     <Compile Include="DebugEventsHunter.cs" />
     <Compile Include="Constants.cs" />
+    <Compile Include="Log.cs" />
     <Compile Include="SecurityGuard.cs" />
     <Compile Include="Storage.cs" />
     <Compile Include="Resources.Designer.cs">

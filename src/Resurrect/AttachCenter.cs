@@ -58,11 +58,11 @@ namespace Resurrect
                 return;
 
             var commandId = new CommandID(Constants.GuidResurrectCmdSet, Constants.CmdidResurrect);
-            _attachToProcessCommand = new OleMenuCommand(AttachToProcesses, commandId) { Enabled = false };
+            _attachToProcessCommand = new OleMenuCommand(AttachToProcesses, commandId) {Enabled = false};            
             mcs.AddCommand(_attachToProcessCommand);
 
             commandId = new CommandID(Constants.GuidResurrectCmdSet, Constants.CmdidAutoAttach);
-            _toggleAutoAttachCommand = new OleMenuCommand(ToggleAutoAttachSetting, commandId) { Checked = false };
+            _toggleAutoAttachCommand = new OleMenuCommand(ToggleAutoAttachSetting, commandId) {Checked = false};
             mcs.AddCommand(_toggleAutoAttachCommand);
         }
 
@@ -98,7 +98,7 @@ namespace Resurrect
         {
             _freezed = false;
             Refresh();
-        }    
+        }
 
         private void Refresh()
         {
@@ -114,6 +114,11 @@ namespace Resurrect
                 : string.Empty;
 
             _attachToProcessCommand.Text = string.Format("Resurrect: {0}{1}", processes, engines);
+        }
+
+        private IEnumerable<string> GetEnginesNames(IEnumerable<string> ids)
+        {
+            return GetEnginesNames(ids.Select(Guid.Parse));
         }
 
         private IEnumerable<string> GetEnginesNames(IEnumerable<Guid> ids)
@@ -167,7 +172,7 @@ namespace Resurrect
             if (runningProcess == null) return;
 
             var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
-            PerformAttachOperation(new[] { runningProcess }, engines);
+            PerformAttachOperation(new[] {runningProcess}, engines);
         }
 
         private void AttachToProcesses(object sender, EventArgs e)
@@ -228,13 +233,18 @@ namespace Resurrect
         {
             lock (_locker)
             {
+                Log.Instance.Clear();
+
                 var array = engines.ToArray();
                 foreach (var process in processes)
                 {
                     try
                     {
                         if (!process.IsBeingDebugged)
+                        {
                             process.Attach2(array.Any() ? array : null); // If no specific engines provided, detect appropriate one.
+                            Log.Instance.AppendLine("[attached] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
+                        }
                     }
                     catch (COMException ex)
                     {
