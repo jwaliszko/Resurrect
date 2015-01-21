@@ -7,6 +7,7 @@
     <Description xml:space="preserve">Attaches debugger to previously debugged processes.</Description>
     <MoreInfoUrl>https://github.com/JaroslawWaliszko/Resurrect</MoreInfoUrl>
     <License>LICENSE.txt</License>
+    <ReleaseNotes>ReleaseNotes.rtf</ReleaseNotes>
     <Locale>1033</Locale>
     <Icon>Resources\icon32.png</Icon>
     <PreviewImage>Resources\screenshot.png</PreviewImage>
