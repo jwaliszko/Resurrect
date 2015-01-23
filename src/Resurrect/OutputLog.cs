@@ -6,16 +6,16 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Resurrect
 {
-    internal sealed class Log
+    internal sealed class OutputLog
     {
         private readonly ConcurrentQueue<string> _messages;
         private readonly Package _provider;
         private IVsOutputWindowPane _outputLog;
 
-        private static Log _instance;
+        private static OutputLog _instance;
         private static readonly object _locker = new object();
 
-        private Log(Package provider)
+        private OutputLog(Package provider)
         {
             _messages = new ConcurrentQueue<string>();
             _provider = provider;
@@ -28,11 +28,11 @@ namespace Resurrect
             {
                 if (_instance != null)
                     throw new InvalidOperationException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
-                _instance = new Log(provider);
+                _instance = new OutputLog(provider);
             }
         }
 
-        public static Log Instance
+        public static OutputLog Instance
         {
             get { return _instance; }
         }

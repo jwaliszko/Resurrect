@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using EnvDTE80;
 using EnvDTE90;
-using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -26,7 +25,7 @@ namespace Resurrect
     // This attribute is needed to let the shell know that this package exposes some menus.
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(Constants.GuidResurrectPkgString)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string)]
+    [ProvideAutoLoad(UIContextGuids.SolutionExists)]
     public sealed class ResurrectPackage : Package
     {
         /// <summary>
@@ -61,7 +60,7 @@ namespace Resurrect
                     var dteDebugger = dte.Debugger as Debugger3;
                     if (dteDebugger != null)
                     {
-                        Log.Instantiate(this);
+                        OutputLog.Instantiate(this);
 
                         Storage.Instantiate(UserRegistryRoot, dte);
                         Storage.Instance.SendPatrol();

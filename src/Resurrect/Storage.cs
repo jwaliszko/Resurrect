@@ -26,9 +26,6 @@ namespace Resurrect
         private static Storage _instance;        
         private static readonly object _locker = new object();
 
-        public event EventHandler<EventArgs> SolutionActivated;
-        public event EventHandler<EventArgs> SolutionDeactivated;
-
         private Storage(RegistryKey storeTarget, DTE2 application)
         {
             _storeTarget = storeTarget;
@@ -89,26 +86,12 @@ namespace Resurrect
         {
             _historicProcesses = GetProcesses().ToList();
             _historicEngines = GetEngines().ToList();
-            OnSolutionActivated();
         }        
 
         void SolutionClosed()
         {
             _historicProcesses.Clear();
             _historicEngines.Clear();
-            OnSolutionDeactivated();
-        }
-
-        private void OnSolutionActivated()
-        {
-            if (SolutionActivated != null)
-                SolutionActivated(this, null);  // Rise an event.
-        }
-
-        private void OnSolutionDeactivated()
-        {
-            if (SolutionDeactivated != null)
-                SolutionDeactivated(this, null);
         }
 
         private IEnumerable<string> GetProcesses()

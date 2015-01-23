@@ -33,9 +33,9 @@
 
     <Menus>
       <Menu guid="guidResurrectCmdSet" id="cmdidResurrectMenuController" priority="0x0100" type="MenuController">
-				<Parent guid="guidSHLMainMenu" id="IDG_VS_TOOLSB_RUNBUILD"/>
-				<CommandFlag>DontCache</CommandFlag>
+				<Parent guid="guidSHLMainMenu" id="IDG_VS_TOOLSB_RUNBUILD"/>        
 				<Strings>
+          <CanonicalName>Resurrect</CanonicalName>
 					<CommandName>Resurrect</CommandName>
 					<ButtonText>Resurrect</ButtonText>
 				</Strings>
@@ -65,16 +65,19 @@
           If you do not want an image next to your command, remove the Icon node /> -->
       <Button guid="guidResurrectCmdSet" id="cmdidResurrect" type="Button">
         <Icon guid="guidImages" id="resurrectBitmap" />
-        <CommandFlag>DontCache</CommandFlag>
-        <CommandFlag>TextChanges</CommandFlag>        
-        <CommandFlag>FixMenuController</CommandFlag>        
+        <CommandFlag>TextChanges</CommandFlag>
+        <CommandFlag>FixMenuController</CommandFlag>
+        <CommandFlag>DefaultDisabled</CommandFlag>
         <Strings>
+          <CanonicalName>Resurrect</CanonicalName>
+          <CommandName>Resurrect</CommandName>
           <ButtonText>Resurrect</ButtonText>
         </Strings>
       </Button>
       <Button guid="guidResurrectCmdSet" id="cmdidAutoAttach" type="Button">
-        <CommandFlag>DontCache</CommandFlag>
-        <Strings>          
+        <Strings>
+          <CanonicalName>AutoAttach</CanonicalName>
+          <CommandName>AutoAttach</CommandName>
           <ButtonText>Auto attach on process startup (on/off, valid for current VS session only)</ButtonText>
         </Strings>
       </Button>

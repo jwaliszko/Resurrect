@@ -20,9 +20,6 @@ namespace Resurrect
         private readonly ManagementEventWatcher _watcher;
         private bool _freezed;
 
-        private OleMenuCommand _attachToProcessCommand;
-        private OleMenuCommand _toggleAutoAttachCommand;
-
         private static AttachCenter _instance;
         private static readonly object _locker = new object();        
 
@@ -58,62 +55,52 @@ namespace Resurrect
                 return;
 
             var commandId = new CommandID(Constants.GuidResurrectCmdSet, Constants.CmdidResurrect);
-            _attachToProcessCommand = new OleMenuCommand(AttachToProcesses, commandId) {Enabled = false};            
-            mcs.AddCommand(_attachToProcessCommand);
+            var attachToProcessCommand = new OleMenuCommand(AttachToProcesses, commandId) {Enabled = false};
+            attachToProcessCommand.BeforeQueryStatus += (s, e) => RefreshStatus((OleMenuCommand) s);
+            mcs.AddCommand(attachToProcessCommand);
 
             commandId = new CommandID(Constants.GuidResurrectCmdSet, Constants.CmdidAutoAttach);
-            _toggleAutoAttachCommand = new OleMenuCommand(ToggleAutoAttachSetting, commandId) {Checked = false};
-            mcs.AddCommand(_toggleAutoAttachCommand);
+            var toggleAutoAttachCommand = new MenuCommand(ToggleAutoAttachSetting, commandId) {Checked = false};
+            mcs.AddCommand(toggleAutoAttachCommand);
         }
 
         public void SendPatrol()
         {
-            Refresh();
-            Storage.Instance.SolutionActivated += SolutionActivityChanged;
-            Storage.Instance.SolutionDeactivated += SolutionActivityChanged;
             _watcher.EventArrived += ProcessStarted;
         }
 
         public void DismissPatrol()
         {
-            Storage.Instance.SolutionActivated -= SolutionActivityChanged;
-            Storage.Instance.SolutionDeactivated -= SolutionActivityChanged;
             _watcher.EventArrived -= ProcessStarted;
             _watcher.Stop();
-        }
-
-        void SolutionActivityChanged(object sender, EventArgs e)
-        {
-            Refresh();
         }
 
         public void Freeze()
         {
             // Freeze only if all historic processes are attached.
             _freezed = !Storage.Instance.HistoricProcesses.Except(Storage.Instance.SessionProcesses).Any();
-            Refresh();
         }
 
         public void Unfreeze()
         {
             _freezed = false;
-            Refresh();
         }
 
-        private void Refresh()
+        private void RefreshStatus(OleMenuCommand command)
         {
-            _attachToProcessCommand.Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
+            command.Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
 
             var processes = Storage.Instance.HistoricProcesses.Any()
                 ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
                 : "(no targets yet)";
             const int length = 50;
-            processes = processes.Length > length ? string.Format("{0}…", processes.Substring(0, length)) : processes;
+            processes = processes.Length > length ? string.Format("{0}…", processes.Substring(0, 50)) : processes;
+            
             var engines = Storage.Instance.HistoricEngines.Any()
                 ? string.Format(" / {0}", string.Join(", ", GetEnginesNames(Storage.Instance.HistoricEngines)))
                 : string.Empty;
 
-            _attachToProcessCommand.Text = string.Format("Resurrect: {0}{1}", processes, engines);
+            command.Text = string.Format("Resurrect: {0}{1}", processes, engines);
         }
 
         private IEnumerable<string> GetEnginesNames(IEnumerable<string> ids)
@@ -204,12 +191,13 @@ namespace Resurrect
         {            
             try
             {
-                if (_toggleAutoAttachCommand.Checked)
+                var command = (MenuCommand) sender;
+                if (command.Checked)
                     _watcher.Stop();
                 else
                     _watcher.Start();
 
-                _toggleAutoAttachCommand.Checked = !_toggleAutoAttachCommand.Checked;
+                command.Checked = !command.Checked;
             }
             catch (ManagementException ex)
             {
@@ -233,7 +221,7 @@ namespace Resurrect
         {
             lock (_locker)
             {
-                Log.Instance.Clear();
+                OutputLog.Instance.Clear();
 
                 var array = engines.ToArray();
                 foreach (var process in processes)
@@ -243,7 +231,7 @@ namespace Resurrect
                         if (!process.IsBeingDebugged)
                         {
                             process.Attach2(array.Any() ? array : null); // If no specific engines provided, detect appropriate one.
-                            Log.Instance.AppendLine("[attached] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
+                            OutputLog.Instance.AppendLine("[attached] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
                         }
                     }
                     catch (COMException ex)
