@@ -15,20 +15,20 @@ namespace Resurrect
         private static Log _instance;
         private static readonly object _locker = new object();
 
-        private Log(Package provider, IVsStatusbar statusBar)
+        private Log(IVsOutputWindowPane outputLog, IVsStatusbar statusBar)
         {
             _messages = new ConcurrentQueue<string>();
-            _outputLog = provider.GetOutputPane(Constants.GuidOutputPane, "Resurrect");
+            _outputLog = outputLog;
             _statusBar = statusBar;
         }
 
-        public static void Instantiate(Package provider, IVsStatusbar statusBar)
+        public static void Instantiate(IVsOutputWindowPane outputLog, IVsStatusbar statusBar)
         {
             lock (_locker)
             {
                 if (_instance != null)
                     throw new InvalidOperationException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
-                _instance = new Log(provider, statusBar);
+                _instance = new Log(outputLog, statusBar);
             }
         }
 

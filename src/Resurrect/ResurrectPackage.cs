@@ -61,8 +61,9 @@ namespace Resurrect
             if (dteDebugger == null)
                 return;
 
-            var statusBar = GetService(typeof (SVsStatusbar));
-            Log.Instantiate(this, (IVsStatusbar) statusBar);
+            var outputLog = GetOutputPane(Constants.GuidOutputPane, "Resurrect");
+            var statusBar = (IVsStatusbar) GetService(typeof (SVsStatusbar));
+            Log.Instantiate(outputLog, statusBar);
 
             Storage.Instantiate(UserRegistryRoot, dte);
             Storage.Instance.SendPatrol();
