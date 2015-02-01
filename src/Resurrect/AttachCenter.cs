@@ -221,8 +221,7 @@ namespace Resurrect
         {
             lock (_locker)
             {
-                OutputLog.Instance.Clear();
-
+                Log.Instance.Clear();
                 var array = engines.ToArray();
                 foreach (var process in processes)
                 {
@@ -230,8 +229,9 @@ namespace Resurrect
                     {
                         if (!process.IsBeingDebugged)
                         {
+                            Log.Instance.SetStatus("[attaching...] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
                             process.Attach2(array.Any() ? array : null); // If no specific engines provided, detect appropriate one.
-                            OutputLog.Instance.AppendLine("[attached] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
+                            Log.Instance.AppendLine("[attached] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
                         }
                     }
                     catch (COMException ex)

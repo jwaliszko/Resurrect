@@ -51,28 +51,27 @@ namespace Resurrect
         {
             base.Initialize();
 
-            var debugger = GetService(typeof(SVsShellDebugger)) as IVsDebugger;
-            if (debugger != null)
-            {
-                var dte = GetService(typeof (SDTE)) as DTE2;
-                if (dte != null)
-                {                    
-                    var dteDebugger = dte.Debugger as Debugger3;
-                    if (dteDebugger != null)
-                    {
-                        OutputLog.Instantiate(this);
+            var debugger = GetService(typeof (SVsShellDebugger)) as IVsDebugger;
+            if (debugger == null)
+                return;
+            var dte = GetService(typeof (SDTE)) as DTE2;
+            if (dte == null)
+                return;
+            var dteDebugger = dte.Debugger as Debugger3;
+            if (dteDebugger == null)
+                return;
 
-                        Storage.Instantiate(UserRegistryRoot, dte);
-                        Storage.Instance.SendPatrol();
+            var statusBar = GetService(typeof (SVsStatusbar));
+            Log.Instantiate(this, (IVsStatusbar) statusBar);
 
-                        AttachCenter.Instantiate(this, dteDebugger);
-                        AttachCenter.Instance.SendPatrol();
+            Storage.Instantiate(UserRegistryRoot, dte);
+            Storage.Instance.SendPatrol();
 
-                        DebugEventsHunter.Instantiate(debugger);
-                        DebugEventsHunter.Instance.SendPatrol();
-                    }
-                }
-            }
+            AttachCenter.Instantiate(this, dteDebugger);
+            AttachCenter.Instance.SendPatrol();
+
+            DebugEventsHunter.Instantiate(debugger);
+            DebugEventsHunter.Instance.SendPatrol();
         }
 
         protected override void Dispose(bool disposing)

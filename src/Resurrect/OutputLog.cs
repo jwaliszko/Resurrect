@@ -6,42 +6,44 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace Resurrect
 {
-    internal sealed class OutputLog
+    internal sealed class Log
     {
         private readonly ConcurrentQueue<string> _messages;
-        private readonly Package _provider;
-        private IVsOutputWindowPane _outputLog;
+        private readonly IVsOutputWindowPane _outputLog;
+        private readonly IVsStatusbar _statusBar;
 
-        private static OutputLog _instance;
+        private static Log _instance;
         private static readonly object _locker = new object();
 
-        private OutputLog(Package provider)
+        private Log(Package provider, IVsStatusbar statusBar)
         {
             _messages = new ConcurrentQueue<string>();
-            _provider = provider;
-            InitializeOutputLog();
+            _outputLog = provider.GetOutputPane(Constants.GuidOutputPane, "Resurrect");
+            _statusBar = statusBar;
         }
 
-        public static void Instantiate(Package provider)
+        public static void Instantiate(Package provider, IVsStatusbar statusBar)
         {
             lock (_locker)
             {
                 if (_instance != null)
                     throw new InvalidOperationException(string.Format("{0} of Resurrect is already instantiated.", _instance.GetType().Name));
-                _instance = new OutputLog(provider);
+                _instance = new Log(provider, statusBar);
             }
         }
 
-        public static OutputLog Instance
+        public static Log Instance
         {
             get { return _instance; }
         }
 
-        private void InitializeOutputLog()
+        public void SetStatus(string format, params object[] args)
         {
-            if (_outputLog != null)
-                return;
-            _outputLog = _provider.GetOutputPane(Constants.GuidOutputPane, "Resurrect");
+            int frozen;
+            _statusBar.IsFrozen(out frozen);
+
+            if (frozen == 0)
+                _statusBar.SetText(string.Format(format, args));
         }
 
         public void AppendLine(string format, params object[] args)
@@ -69,8 +71,6 @@ namespace Resurrect
 
         private void DoClear()
         {
-            InitializeOutputLog();
-
             while (!_messages.IsEmpty)
             {
                 string dummy;
@@ -89,7 +89,6 @@ namespace Resurrect
 
         private void ProcessMessageQueue()
         {
-            InitializeOutputLog();
             while (!_messages.IsEmpty)
             {
                 string message;
