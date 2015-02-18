@@ -46,13 +46,19 @@ namespace Resurrect
                 _statusBar.SetText(string.Format(format, args));
         }
 
+        public void Activate()
+        {
+            if (_outputLog != null)
+                _outputLog.Activate();
+        }
+
         public void AppendLine(string format, params object[] args)
         {
             var sb = new StringBuilder();
             sb.AppendFormat(format, args);
             sb.AppendLine();            
             Append(sb.ToString());
-        }
+        }        
 
         public void Append(string format, params object[] args)
         {

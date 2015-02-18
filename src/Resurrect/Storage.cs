@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.Win32;
@@ -19,10 +20,9 @@ namespace Resurrect
         private readonly SolutionEvents _solutionEvents;
         private readonly RegistryKey _storeTarget;
         private readonly DTE2 _application;
-        private List<string> _historicProcesses;
-        private List<Guid> _historicEngines;
-        private List<string> _sessionProcesses;
-        private List<Guid> _sessionEngines;
+        private IList<AttachData> _historicProcesses;
+        private IList<AttachData> _sessionProcesses;
+
         private static Storage _instance;        
         private static readonly object _locker = new object();
 
@@ -31,8 +31,8 @@ namespace Resurrect
             _storeTarget = storeTarget;
             _application = application;
             _solutionEvents = application.Events.SolutionEvents;
-            _historicProcesses = _sessionProcesses = new List<string>();
-            _historicEngines = _sessionEngines = new List<Guid>();
+            _historicProcesses = new List<AttachData>();
+            _sessionProcesses = new List<AttachData>();
         }
 
         public static void Instantiate(RegistryKey storeTarget, DTE2 application)
@@ -50,24 +50,14 @@ namespace Resurrect
             get { return _instance; }
         }
 
-        public IEnumerable<string> HistoricProcesses
+        public IEnumerable<AttachData> HistoricProcesses
         {
             get { return _historicProcesses; }
         }
 
-        public IEnumerable<Guid> HistoricEngines
-        {
-            get { return _historicEngines; }
-        }
-
-        public IEnumerable<string> SessionProcesses
+        public IEnumerable<AttachData> SessionProcesses
         {
             get { return _sessionProcesses; }
-        }
-
-        public IEnumerable<Guid> SessionEngines
-        {
-            get { return _sessionEngines; }
         }
 
         public void SendPatrol()
@@ -84,84 +74,89 @@ namespace Resurrect
 
         void SolutionOpened()
         {
-            _historicProcesses = GetProcesses().ToList();
-            _historicEngines = GetEngines().ToList();
-        }        
+            _historicProcesses = GetProcesses();
+        }
 
         void SolutionClosed()
         {
             _historicProcesses.Clear();
-            _historicEngines.Clear();
         }
 
-        private IEnumerable<string> GetProcesses()
+        private IList<AttachData> GetProcesses()
         {
             using (var key = _storeTarget.OpenSubKey(KeyName))
             {
-                if (key == null) 
-                    return new string[0];
+                var result = new List<AttachData>();
+
+                if (key == null)
+                    return result;
 
                 var value = key.GetValue(KeyValue) as string;
-                if (value == null) 
-                    return new string[0];
-                
-                var processes = value.Split(new[] {'|'}).FirstOrDefault();
-                return !string.IsNullOrEmpty(processes) ? processes.Split(new[] {','}) : new string[0];
+                if (value == null)
+                    return result;
+
+                var sets = value.Split(new[] {';'}); // proc1|eng1;proc2|eng1,eng2;
+                foreach (var set in sets)
+                {
+                    var items = set.Split(new[] {'|'});
+                    if (items.Any())
+                    {
+                        var processes = items.First().Split(new[] {','}); // backward compatibility proc1,proc2|eng1
+                        var engines = items.Last().Split(new[] {','});
+                        foreach (var process in processes)
+                        {
+                            result.Add(new AttachData {ProcessName = process, DebugEngines = engines.Select(Guid.Parse).ToList()});
+                        }
+                    }
+                }
+                return result;
             }
         }
 
-        private IEnumerable<Guid> GetEngines()
+        public void SubscribeProcess(string process)
         {
-            using (var key = _storeTarget.OpenSubKey(KeyName))
+            lock (_locker)
             {
-                if (key == null) 
-                    return new Guid[0];
-                
-                var value = key.GetValue(KeyValue) as string;
-                if (value == null) 
-                    return new Guid[0];
-                
-                var engines = value.Split(new[] {'|'}).Skip(1).FirstOrDefault();
-                return !string.IsNullOrEmpty(engines) ? engines.Split(new[] {','}).Select(Guid.Parse) : new Guid[0];
+                if (!_sessionProcesses.Any(x => x.ProcessName.Equals(process)))
+                    _sessionProcesses.Add(new AttachData {ProcessName = process});
             }
         }
 
-        private void Sanitize()
+        public void SubscribeEngine(string process, Guid engine)
         {
-            _sessionProcesses = _sessionProcesses.Distinct().ToList();
-            _sessionEngines = _sessionEngines.Distinct().ToList();
-        }
-
-        public void SubscribeProcess(string item)
-        {
-            _sessionProcesses.Add(item);
-            Sanitize();
-        }
-
-        public void SubscribeEngine(Guid item)
-        {
-            _sessionEngines.Add(item);
-            Sanitize();
+            lock (_locker)
+            {
+                var data = _sessionProcesses.Single(x => x.ProcessName.Equals(process));
+                if(!data.DebugEngines.Contains(engine))
+                    data.DebugEngines.Add(engine);
+            }
         }
 
         public void Persist()
         {
-            if (!_sessionProcesses.Any() || !_sessionEngines.Any()) return;
-            
+            if (!_sessionProcesses.Any()) 
+                return;
+             
             using (var key = _storeTarget.OpenSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree) ??
                              _storeTarget.CreateSubKey(KeyName, RegistryKeyPermissionCheck.ReadWriteSubTree))
             {
                 if (key == null)
                     throw new InvalidOperationException("Resurrect could not store processes for further usage - registry problem.");
 
-                var value = string.Format("{0}|{1}", string.Join(",", _sessionProcesses), string.Join(",", _sessionEngines));
+                var value = new StringBuilder();
+                foreach (var sessionProcess in _sessionProcesses)
+                {
+                    value.Append(string.Format("{0}|{1};", sessionProcess.ProcessName, string.Join(",", sessionProcess.DebugEngines)));
+                }
+                value.Length--; // remove last ';'
                 key.SetValue(KeyValue, value);
 
-                _historicProcesses = _sessionProcesses.ToList();
-                _historicEngines = _sessionEngines.ToList();
-
+                _historicProcesses.Clear();
+                foreach (var sessionProcess in _sessionProcesses)
+                {
+                    _historicProcesses.Add(new AttachData(sessionProcess));
+                }
                 _sessionProcesses.Clear();
-                _sessionEngines.Clear();
             }
         }
     }

@@ -24,7 +24,7 @@ namespace Resurrect
                 if (Environment.OSVersion.Platform != PlatformID.Win32NT || Environment.OSVersion.Version.Major < 6)
                     return false;   // Operating system does not support UAC; skipping elevation check.
 
-                var tokenInfLength = Marshal.SizeOf(typeof(int));
+                var tokenInfLength = Marshal.SizeOf(typeof (int));
                 var tokenInformation = Marshal.AllocHGlobal(tokenInfLength);
 
                 try
@@ -38,12 +38,12 @@ namespace Resurrect
                         throw new InvalidOperationException("Couldn't get token information.", exception);
                     }
 
-                    var elevationType = (TokenElevationType)Marshal.ReadInt32(tokenInformation);
+                    var elevationType = (TokenElevationType) Marshal.ReadInt32(tokenInformation);
                     return elevationType == TokenElevationType.TokenElevationTypeFull;
                 }
                 finally
                 {
-                    if (tokenInformation != IntPtr.Zero) 
+                    if (tokenInformation != IntPtr.Zero)
                         Marshal.FreeHGlobal(tokenInformation);
                 }
             }

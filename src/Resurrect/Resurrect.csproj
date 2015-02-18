@@ -94,6 +94,7 @@
     <Compile Include="Constants.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="NativeMethods.cs" />
+    <Compile Include="AttachData.cs" />
     <Compile Include="SecurityGuard.cs" />
     <Compile Include="Storage.cs" />
     <Compile Include="Resources.Designer.cs">

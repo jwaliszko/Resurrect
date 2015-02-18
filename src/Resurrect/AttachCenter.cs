@@ -78,12 +78,24 @@ namespace Resurrect
         public void Freeze()
         {
             // Freeze only if all historic processes are attached.
-            _freezed = !Storage.Instance.HistoricProcesses.Except(Storage.Instance.SessionProcesses).Any();
+            _freezed = !Storage.Instance.HistoricProcesses.Select(x => x.ProcessName)
+                .Except(Storage.Instance.SessionProcesses.Select(x => x.ProcessName))
+                .Any();
         }
 
         public void Unfreeze()
         {
             _freezed = false;
+            
+            foreach (var process in Storage.Instance.SessionProcesses)
+            {
+                var engines = process.DebugEngines.Select(x => string.Format("{{{0}}}", x)).ToArray();
+                var processName = Path.GetFileName(process.ProcessName);
+                var enginesNames = string.Join(", ", GetEnginesNames(engines));
+                
+                Log.Instance.AppendLine("[cached] {0} / {1}", processName, enginesNames);
+            }
+            Log.Instance.Activate();
         }
 
         private void RefreshStatus(OleMenuCommand command)
@@ -91,24 +103,22 @@ namespace Resurrect
             command.Enabled = !_freezed && Storage.Instance.HistoricProcesses.Any();
 
             var processes = Storage.Instance.HistoricProcesses.Any()
-                ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(Path.GetFileName))
+                ? string.Join(", ", Storage.Instance.HistoricProcesses.Select(x => x.ShortProcessName))
                 : "(no targets yet)";
             const int length = 50;
-            processes = processes.Length > length ? string.Format("{0}…", processes.Substring(0, 50)) : processes;
+            processes = processes.Length > length
+                ? string.Format("{0}…", processes.Substring(0, 50))
+                : processes;
             
-            var engines = Storage.Instance.HistoricEngines.Any()
-                ? string.Format(" / {0}", string.Join(", ", GetEnginesNames(Storage.Instance.HistoricEngines)))
-                : string.Empty;
-
-            command.Text = string.Format("Resurrect: {0}{1}", processes, engines);
+            command.Text = string.Format("Resurrect: {0}", processes);
         }
 
-        private IEnumerable<string> GetEnginesNames(IEnumerable<string> ids)
+        public IEnumerable<string> GetEnginesNames(IEnumerable<string> ids)
         {
             return GetEnginesNames(ids.Select(Guid.Parse));
         }
 
-        private IEnumerable<string> GetEnginesNames(IEnumerable<Guid> ids)
+        public IEnumerable<string> GetEnginesNames(IEnumerable<Guid> ids)
         {
             var names = new List<string>();
             var transport = _dteDebugger.Transports.Item("default");
@@ -135,7 +145,7 @@ namespace Resurrect
             var processId = e.NewEvent.Properties["ProcessID"].Value.ToString();
             var processName = GetMainModuleFilePath(int.Parse(processId));
 
-            if (Storage.Instance.HistoricProcesses.Contains(processName))
+            if (Storage.Instance.HistoricProcesses.Any(x => x.ProcessName.Equals(processName)))
                 AttachToProcessSilently(processName);
         }
 
@@ -156,22 +166,25 @@ namespace Resurrect
         private void AttachToProcessSilently(string processName)
         {
             var runningProcess = _dteDebugger.LocalProcesses.Cast<Process3>().FirstOrDefault(x => x.Name.Equals(processName));
-            if (runningProcess == null) return;
+            if (runningProcess == null)
+                return;
 
-            var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
-            PerformAttachOperation(new[] {runningProcess}, engines);
+            PerformAttachOperation(new[] {runningProcess});
         }
 
         private void AttachToProcesses(object sender, EventArgs e)
         {
             var runningProcesses = _dteDebugger.LocalProcesses.Cast<Process3>()
-                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.Equals(process.Name))).ToList();
+                .Where(process => Storage.Instance.HistoricProcesses.Any(x => x.ProcessName.Equals(process.Name)))
+                .ToList();
             if (!runningProcesses.Any())
             {
                 ShowMessage("No historic processes found. Debug session cannot be resurrected.", OLEMSGICON.OLEMSGICON_INFO);
                 return;
             }
-            var missingProcesses = Storage.Instance.HistoricProcesses.Except(runningProcesses.Select(x => x.Name)).ToList();
+
+            var missingProcesses = Storage.Instance.HistoricProcesses
+                .Select(x => x.ProcessName).Except(runningProcesses.Select(x => x.Name)).ToList();
             if (missingProcesses.Any())
             {
                 if (DialogResult.Yes !=
@@ -182,9 +195,8 @@ namespace Resurrect
                     return;
                 }
             }
-            var engines = Storage.Instance.HistoricEngines.Select(x => string.Format("{{{0}}}", x)).ToList();
-                        
-            PerformAttachOperation(runningProcesses, engines);
+
+            PerformAttachOperation(runningProcesses);
         }
 
         private void ToggleAutoAttachSetting(object sender, EventArgs e)
@@ -217,38 +229,36 @@ namespace Resurrect
             }
         }
 
-        private void PerformAttachOperation(IEnumerable<Process3> processes, IEnumerable<string> engines)
+        private void PerformAttachOperation(IEnumerable<Process3> processes)
         {
-            lock (_locker)
+            foreach (var process in processes)
             {
-                Log.Instance.Clear();
-                var array = engines.ToArray();
-                foreach (var process in processes)
+                try
                 {
-                    try
+                    if (!process.IsBeingDebugged)
                     {
-                        if (!process.IsBeingDebugged)
-                        {
-                            Log.Instance.SetStatus("[attaching...] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
-                            process.Attach2(array.Any() ? array : null); // If no specific engines provided, detect appropriate one.
-                            Log.Instance.AppendLine("[attached] {0} / {1}.", Path.GetFileName(process.Name), string.Join(", ", GetEnginesNames(array)));
-                        }
+                        var engines = Storage.Instance.HistoricProcesses
+                            .Single(x => x.ProcessName.Equals(process.Name))
+                            .DebugEngines.Select(x => string.Format("{{{0}}}", x))
+                            .ToArray();
+
+                        process.Attach2(engines.Any() ? engines : null); // If no specific engines provided, detect appropriate one.
                     }
-                    catch (COMException ex)
-                    {
-                        // HRESULTs are COM's weakness, error codes don't scale well so we get a diagnostic for what couldn't be done, not for why it couldn't be done.
-                        // We can try to detect the simplest (not authorized) source of the failure on our own...
-                        if (!SecurityGuard.HasAdminRights) 
-                            ThrowElevationRequired();
-                        else                            
-                            ShowMessage(string.Format(
-                                "Unable to attach to the process {0}. A debugger can be already attached (otherwise, unexpected problem has just occurred).",
-                                Path.GetFileName(process.Name)), OLEMSGICON.OLEMSGICON_CRITICAL);
-                    }
-                    catch (Exception ex)
-                    {
-                        ShowMessage(ex.Message, OLEMSGICON.OLEMSGICON_CRITICAL);
-                    }
+                }
+                catch (COMException ex)
+                {
+                    // HRESULTs are COM's weakness, error codes don't scale well so we get a diagnostic for what couldn't be done, not for why it couldn't be done.
+                    // We can try to detect the simplest (not authorized) source of the failure on our own...
+                    if (!SecurityGuard.HasAdminRights) 
+                        ThrowElevationRequired();
+                    else                            
+                        ShowMessage(string.Format(
+                            "Unable to attach to the process {0}. A debugger can be already attached (otherwise, unexpected problem has just occurred).",
+                            Path.GetFileName(process.Name)), OLEMSGICON.OLEMSGICON_CRITICAL);
+                }
+                catch (Exception ex)
+                {
+                    ShowMessage(ex.Message, OLEMSGICON.OLEMSGICON_CRITICAL);
                 }
             }
         }
