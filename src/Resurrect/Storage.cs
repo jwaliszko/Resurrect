@@ -23,6 +23,9 @@ namespace Resurrect
         private IList<AttachData> _historicProcesses;
         private IList<AttachData> _sessionProcesses;
 
+        public event EventHandler<EventArgs> SolutionActivated;
+        public event EventHandler<EventArgs> SolutionDeactivated;
+
         private static Storage _instance;        
         private static readonly object _locker = new object();
 
@@ -75,11 +78,25 @@ namespace Resurrect
         void SolutionOpened()
         {
             _historicProcesses = GetProcesses();
+            OnSolutionActivated();
         }
 
         void SolutionClosed()
         {
             _historicProcesses.Clear();
+            OnSolutionDeactivated();
+        }
+
+        private void OnSolutionActivated()
+        {
+            if (SolutionActivated != null)
+                SolutionActivated(this, null);  // Rise an event.
+        }
+
+        private void OnSolutionDeactivated()
+        {
+            if (SolutionDeactivated != null)
+                SolutionDeactivated(this, null);
         }
 
         private IList<AttachData> GetProcesses()

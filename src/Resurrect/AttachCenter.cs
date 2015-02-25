@@ -66,14 +66,28 @@ namespace Resurrect
 
         public void SendPatrol()
         {
+            Storage.Instance.SolutionActivated += SolutionActivated;
+            Storage.Instance.SolutionDeactivated += SolutionDeactivated;
             _watcher.EventArrived += ProcessStarted;
-        }
+        }        
 
         public void DismissPatrol()
         {
+            Storage.Instance.SolutionActivated -= SolutionActivated;
+            Storage.Instance.SolutionDeactivated -= SolutionDeactivated;
             _watcher.EventArrived -= ProcessStarted;
             _watcher.Stop();
         }
+
+        private void SolutionActivated(object sender, EventArgs e)
+        {
+            PrintProcesses(Storage.Instance.HistoricProcesses, "loaded");
+        }
+
+        private void SolutionDeactivated(object sender, EventArgs e)
+        {
+            Log.Instance.Clear();
+        }        
 
         public void Freeze()
         {
@@ -86,16 +100,28 @@ namespace Resurrect
         public void Unfreeze()
         {
             _freezed = false;
-            
-            foreach (var process in Storage.Instance.SessionProcesses)
+            PrintProcesses(Storage.Instance.SessionProcesses, "saved");
+        }
+
+        void ProcessStarted(object sender, EventArrivedEventArgs e)
+        {
+            var processId = e.NewEvent.Properties["ProcessID"].Value.ToString();
+            var processName = GetMainModuleFilePath(int.Parse(processId));
+
+            if (Storage.Instance.HistoricProcesses.Any(x => x.ProcessName.Equals(processName)))
+                AttachToProcessSilently(processName);
+        }
+
+        private void PrintProcesses(IEnumerable<AttachData> processes, string message)
+        {
+            foreach (var process in processes)
             {
                 var engines = process.DebugEngines.Select(x => string.Format("{{{0}}}", x)).ToArray();
-                var processName = Path.GetFileName(process.ProcessName);
+                var shortName = Path.GetFileName(process.ProcessName);
                 var enginesNames = string.Join(", ", GetEnginesNames(engines));
-                
-                Log.Instance.AppendLine("[cached] {0} / {1}", processName, enginesNames);
+
+                Log.Instance.AppendLine("[{0}] {1} / {2}", message, shortName, enginesNames);
             }
-            Log.Instance.Activate();
         }
 
         private void RefreshStatus(OleMenuCommand command)
@@ -107,13 +133,13 @@ namespace Resurrect
                 : "(no targets yet)";
             const int length = 50;
             processes = processes.Length > length
-                ? string.Format("{0}…", processes.Substring(0, 50))
+                ? string.Format("{0}...", processes.Substring(0, 50))
                 : processes;
             
             command.Text = string.Format("Resurrect: {0}", processes);
         }
 
-        public IEnumerable<string> GetEnginesNames(IEnumerable<string> ids)
+        private IEnumerable<string> GetEnginesNames(IEnumerable<string> ids)
         {
             return GetEnginesNames(ids.Select(Guid.Parse));
         }
@@ -138,15 +164,6 @@ namespace Resurrect
                     names.Add("Unknown");
             }
             return names;
-        }
-
-        void ProcessStarted(object sender, EventArrivedEventArgs e)
-        {
-            var processId = e.NewEvent.Properties["ProcessID"].Value.ToString();
-            var processName = GetMainModuleFilePath(int.Parse(processId));
-
-            if (Storage.Instance.HistoricProcesses.Any(x => x.ProcessName.Equals(processName)))
-                AttachToProcessSilently(processName);
         }
 
         // Allows to avoid "A 32 bit processes cannot access modules of a 64 bit process" thrown when accessing MainModule of System.Diagnostics.Process...
@@ -245,13 +262,13 @@ namespace Resurrect
                         process.Attach2(engines.Any() ? engines : null); // If no specific engines provided, detect appropriate one.
                     }
                 }
-                catch (COMException ex)
+                catch (COMException)
                 {
-                    // HRESULTs are COM's weakness, error codes don't scale well so we get a diagnostic for what couldn't be done, not for why it couldn't be done.
+                    // HRESULTs are COM's weakness, error codes don't scale well so we get a diagnostic for WHAT couldn't be done, not for WHY it couldn't be done.
                     // We can try to detect the simplest (not authorized) source of the failure on our own...
                     if (!SecurityGuard.HasAdminRights) 
                         ThrowElevationRequired();
-                    else                            
+                    else
                         ShowMessage(string.Format(
                             "Unable to attach to the process {0}. A debugger can be already attached (otherwise, unexpected problem has just occurred).",
                             Path.GetFileName(process.Name)), OLEMSGICON.OLEMSGICON_CRITICAL);

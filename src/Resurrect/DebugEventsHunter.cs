@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Linq;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Debugger.Interop;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -69,15 +68,23 @@ namespace Resurrect
             if (process.GetName((uint) enum_GETNAME_TYPE.GN_FILENAME, out processName) != VSConstants.S_OK)
                 return VSConstants.S_OK;
             if (processName.EndsWith("vshost.exe"))
-                return VSConstants.S_OK;            
+                return VSConstants.S_OK;
+
+            var shortName = Path.GetFileName(processName);
 
             if (debugEvent is IDebugProcessCreateEvent2)
             {
-                Log.Instance.SetStatus("[attaching...] {0}", Path.GetFileName(processName));
+                Log.Instance.SetStatus("[attaching...] {0}", shortName);
+
                 Storage.Instance.SubscribeProcess(processName);
                 AttachCenter.Instance.Freeze();
             }
-            if (debugEvent is IDebugLoadCompleteEvent2)
+            if (debugEvent is IDebugProcessDestroyEvent2)
+            {
+                Log.Instance.SetStatus("[detached] {0}", shortName);
+                Log.Instance.AppendLine("[detached] {0}", shortName);
+            }
+            if (debugEvent is  IDebugLoadCompleteEvent2)
             {
                 if (program != null)
                 {
@@ -88,9 +95,10 @@ namespace Resurrect
                         var fields = new PROCESS_INFO[1];
                         if (process.GetInfo((uint)enum_PROCESS_INFO_FIELDS.PIF_PROCESS_ID, fields) != VSConstants.S_OK)
                             return VSConstants.S_OK;
-                        var processId = fields[0].ProcessId.dwProcessId;
-                        Log.Instance.AppendLine("[attached] {0} ({1}) / {2}", Path.GetFileName(processName), processId, AttachCenter.Instance.GetEnginesNames(new[] {engineId}).Single());
                         Storage.Instance.SubscribeEngine(processName, engineId);
+
+                        Log.Instance.SetStatus("[attached] {0}", shortName);
+                        Log.Instance.AppendLine("[attached] {0} ({1}) / {2}", shortName, fields[0].ProcessId.dwProcessId, engineName);
                     }
                 }
             }
