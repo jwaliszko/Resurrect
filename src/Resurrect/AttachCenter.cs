@@ -201,7 +201,8 @@ namespace Resurrect
             }
 
             var missingProcesses = Storage.Instance.HistoricProcesses
-                .Select(x => x.ProcessName).Except(runningProcesses.Select(x => x.Name)).ToList();
+                .Select(x => x.ProcessName).Except(runningProcesses.Select(x => x.Name))
+                .ToList();
             if (missingProcesses.Any())
             {
                 if (DialogResult.Yes !=

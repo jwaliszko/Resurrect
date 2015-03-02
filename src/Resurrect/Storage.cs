@@ -26,7 +26,7 @@ namespace Resurrect
         public event EventHandler<EventArgs> SolutionActivated;
         public event EventHandler<EventArgs> SolutionDeactivated;
 
-        private static Storage _instance;        
+        private static Storage _instance;
         private static readonly object _locker = new object();
 
         private Storage(RegistryKey storeTarget, DTE2 application)
@@ -55,12 +55,12 @@ namespace Resurrect
 
         public IEnumerable<AttachData> HistoricProcesses
         {
-            get { return _historicProcesses; }
+            get { return _historicProcesses.Where(x => x.DebugEngines.Any()); }
         }
 
         public IEnumerable<AttachData> SessionProcesses
         {
-            get { return _sessionProcesses; }
+            get { return _sessionProcesses.Where(x => x.DebugEngines.Any()); }
         }
 
         public void SendPatrol()
@@ -163,10 +163,14 @@ namespace Resurrect
                 var value = new StringBuilder();
                 foreach (var sessionProcess in _sessionProcesses)
                 {
-                    value.Append(string.Format("{0}|{1};", sessionProcess.ProcessName, string.Join(",", sessionProcess.DebugEngines)));
+                    if(sessionProcess.DebugEngines.Any())
+                        value.Append(string.Format("{0}|{1};", sessionProcess.ProcessName, string.Join(",", sessionProcess.DebugEngines)));
                 }
-                value.Length--; // remove last ';'
-                key.SetValue(KeyValue, value);
+                if (value.Length > 0)
+                {
+                    value.Length--; // remove last ';'
+                    key.SetValue(KeyValue, value);
+                }
 
                 _historicProcesses.Clear();
                 foreach (var sessionProcess in _sessionProcesses)
