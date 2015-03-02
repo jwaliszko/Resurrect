@@ -75,9 +75,7 @@ namespace Resurrect
             if (debugEvent is IDebugProcessCreateEvent2)
             {
                 Log.Instance.SetStatus("[attaching...] {0}", shortName);
-
                 Storage.Instance.SubscribeProcess(processName);
-                AttachCenter.Instance.Freeze();
             }
             if (debugEvent is IDebugProcessDestroyEvent2)
             {
@@ -96,6 +94,7 @@ namespace Resurrect
                         if (process.GetInfo((uint)enum_PROCESS_INFO_FIELDS.PIF_PROCESS_ID, fields) != VSConstants.S_OK)
                             return VSConstants.S_OK;
                         Storage.Instance.SubscribeEngine(processName, engineId);
+                        AttachCenter.Instance.Freeze();
 
                         Log.Instance.SetStatus("[attached] {0}", shortName);
                         Log.Instance.AppendLine("[attached] {0} ({1}) / {2}", shortName, fields[0].ProcessId.dwProcessId, engineName);

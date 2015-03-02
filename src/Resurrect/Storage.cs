@@ -170,14 +170,14 @@ namespace Resurrect
                 {
                     value.Length--; // remove last ';'
                     key.SetValue(KeyValue, value);
-                }
 
-                _historicProcesses.Clear();
-                foreach (var sessionProcess in _sessionProcesses)
-                {
-                    _historicProcesses.Add(new AttachData(sessionProcess));
+                    _historicProcesses.Clear();
+                    foreach (var sessionProcess in _sessionProcesses)
+                    {
+                        _historicProcesses.Add(new AttachData(sessionProcess));
+                    }
+                    _sessionProcesses.Clear();
                 }
-                _sessionProcesses.Clear();
             }
         }
     }
