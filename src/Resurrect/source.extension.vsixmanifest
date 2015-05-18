@@ -5,6 +5,7 @@
     <Author>Jaroslaw Waliszko</Author>
     <Version>1.5</Version>
     <Description xml:space="preserve">Attaches debugger to previously debugged processes.</Description>
+    <GettingStartedGuide>https://visualstudiogallery.msdn.microsoft.com/043c7c91-e127-4616-bce0-39b869cee4b3</GettingStartedGuide>
     <MoreInfoUrl>https://github.com/JaroslawWaliszko/Resurrect</MoreInfoUrl>
     <License>LICENSE.txt</License>
     <ReleaseNotes>ReleaseNotes.rtf</ReleaseNotes>
